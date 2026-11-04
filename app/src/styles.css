@@ -395,6 +395,9 @@ html.is-watching .lastaction {
   background: rgba(0, 0, 0, 0.6);
   animation: watch-note 5s forwards;
 }
+.input-watch-note.is-gone {
+  display: none;
+}
 @keyframes watch-note {
   0%,
   80% {

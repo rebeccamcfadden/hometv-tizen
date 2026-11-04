@@ -32,12 +32,27 @@ export function openTvPage(page: TvPage, what: string): void {
 
 let net: NetState = { kind: 'unknown', signal: null, name: '', online: true };
 let netAsked = false;
-const netListeners: (() => void)[] = [];
+
+/**
+ * Paints every nav's Wi-Fi icon on the stage. A page's nav is off the stage while another page covers it, so this runs
+ * again whenever the stack changes, rather than each icon keeping a listener of its own.
+ */
+function paintNetIcons() {
+  if (!shell.stage) return;
+  const icons = shell.stage.querySelectorAll('[data-key="dev-wifi"]');
+  const name = netIcon();
+  for (let i = 0; i < icons.length; i++) {
+    const el = icons[i] as HTMLElement;
+    if (el.getAttribute('data-icon') === name) continue;
+    el.setAttribute('data-icon', name);
+    el.innerHTML = icon(name, 28);
+  }
+}
 
 function refreshNet(): Promise<NetState> {
   return bridge.platform.network().then((s) => {
     net = s;
-    netListeners.slice().forEach((fn) => fn());
+    paintNetIcons();
     return s;
   });
 }
@@ -53,6 +68,7 @@ function followNet() {
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) refreshNet();
   });
+  shell.onChange(paintNetIcons);
 }
 
 /** The nav's icon for the connection: crossed out when offline, a cable for Ethernet. */
@@ -61,19 +77,12 @@ export function netIcon(s: NetState = net): IconName {
   return s.kind === 'ethernet' ? 'ethernet' : 'wifi';
 }
 
-/** Keeps `el`'s icon on the connection; stops once `el` has left the page (each page builds its own nav). */
+/** Puts the connection's icon on a nav's Wi-Fi button, which then follows it (paintNetIcons). */
 export function paintNetIcon(el: HTMLElement): void {
+  const name = netIcon();
+  el.setAttribute('data-icon', name);
+  el.innerHTML = icon(name, 28);
   followNet();
-  const paint = () => {
-    el.innerHTML = icon(netIcon(), 28);
-  };
-  paint();
-  const fn = () => {
-    if (el.isConnected) return paint();
-    const i = netListeners.indexOf(fn);
-    if (i >= 0) netListeners.splice(i, 1);
-  };
-  netListeners.push(fn);
 }
 
 const signalWords = (s: number | null) => (s === null ? '' : s >= 0.66 ? 'Strong signal' : s >= 0.33 ? 'Fair signal' : 'Weak signal');
@@ -127,12 +136,16 @@ export const inputLabel = (i: TvInput) => i.device || i.port;
 
 /** What shows while an input is up: nothing of HomeTV's but a line that fades, so the input fills the screen. */
 function watchScreen(input: TvInput): Screen {
-  const el = h('div.screen.input-watch', h('div.input-watch-note', `${inputLabel(input)} · Back returns to HomeTV`));
+  const note = h('div.input-watch-note', `${inputLabel(input)} · Back returns to HomeTV`);
+  const el = h('div.screen.input-watch', note);
   document.documentElement.classList.add('is-watching');
+  // Gone after a few seconds whatever Motion says (its fade is only how it goes), so nothing stays on the picture.
+  const noteTimer = window.setTimeout(() => note.classList.add('is-gone'), 5000);
   let left = false;
   const leave = () => {
     if (left) return;
     left = true;
+    clearTimeout(noteTimer);
     document.removeEventListener('visibilitychange', onVisible);
     bridge.platform.inputs.leave();
     document.documentElement.classList.remove('is-watching');
