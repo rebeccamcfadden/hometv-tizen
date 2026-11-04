@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- For the Tizen TV emulator only: the module's page and service as a normal app, started the way TizenBrew starts
+     them (boot.html starts the service, then moves to the page). Never installed on a family TV: there TizenBrew
+     loads the module from npm. tools/package-tizen.mjs builds the .wgt. Privileges are TizenBrew's own, plus
+     application.info, so the emulator shows whether listing apps needs it. -->
+<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="https://github.com/rebeccamcfadden/hometv-tizen" version="0.0.1" viewmodes="maximized">
+    <access origin="*" subdomains="true"></access>
+    <tizen:application id="HmTvSpike0.HomeTVSpike" package="HmTvSpike0" required_version="3.0"/>
+    <content src="boot.html"/>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <feature name="http://tizen.org/feature/web.service"/>
+    <name>HomeTV spike</name>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://developer.samsung.com/privilege/network.public"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.info"/>
+    <tizen:profile name="tv-samsung"/>
+    <tizen:service id="HmTvSpike0.HomeTVService">
+        <tizen:content src="service-host.js"/>
+        <tizen:name>HomeTVService</tizen:name>
+        <tizen:description>HomeTV spike service</tizen:description>
+    </tizen:service>
+    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="enable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+</widget>
