@@ -15,6 +15,7 @@ import { button } from '../ui/widgets';
 import type { Pane, PaneHost } from './panes/pane';
 import { regionPane } from './panes/region';
 import { weatherPane } from './panes/weather';
+import { weather } from '../weather/homeWeather';
 
 type StepId = 'region' | 'weather';
 
@@ -293,7 +294,13 @@ export function setupScreen(): Screen {
     paint();
     paintPanel();
   };
-  const offs = [prefs.on(repaint)];
+  const offs = [
+    prefs.on(repaint),
+    // The forecast for a city just chosen arrives after the pane drew "Getting the weather…".
+    weather.on(() => {
+      if (open === 'weather') paintPanel();
+    }),
+  ];
   // First run has ended (Start, Back, the nav): it doesn't show by itself again.
   const offStack = shell.onChange(() => {
     if (shell.has(screen)) return;
