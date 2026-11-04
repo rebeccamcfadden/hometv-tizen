@@ -1,0 +1,27 @@
+# AeroTizen: Samsung TV ads + viewing-data (ACR) blocklist, "safe" tier.
+# Blocks home-screen ads and automatic content recognition. The app store, app
+# logins, firmware updates and casting keep working.
+# Format: one domain per line (Pi-hole, AdGuard Home, NextDNS, pfBlockerNG, hosts-style tools).
+# Sources: community lists by wassname and hkamran80 (see README), trimmed to avoid breakage.
+
+# Ad delivery
+samsungads.com
+ads.samsungads.com
+events.samsungads.com
+config.samsungads.com
+samsungadhub.com
+ad.samsungadhub.com
+rd.samsungadhub.com
+tvx.adgrx.com
+samsungrm.net
+
+# Automatic content recognition (what's on screen -> targeted ads)
+samsungacr.com
+log-1.samsungacr.com
+log-2.samsungacr.com
+log-3.samsungacr.com
+log-config.samsungacr.com
+acr0.samsungcloudsolution.com
+
+# Usage telemetry
+gpm.samsungqbe.com

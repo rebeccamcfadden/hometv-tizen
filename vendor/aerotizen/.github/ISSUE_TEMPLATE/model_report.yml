@@ -1,0 +1,30 @@
+name: Tested on my TV
+description: Report how AeroTizen behaves on your model (the most useful contribution)
+labels: [model-report]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: TV model, size and year
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: "`aerotizen status` output"
+      render: shell
+  - type: checkboxes
+    id: works
+    attributes:
+      label: What works
+      options:
+        - label: Developer Mode connection (sdb)
+        - label: Launcher installs and runs
+        - label: Starts on power-on
+        - label: Home returns to the launcher (note which apps)
+        - label: Inputs list and switching
+        - label: Uninstall over sdb (older firmware only)
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes (menu labels that differ, apps that misbehave, ...)

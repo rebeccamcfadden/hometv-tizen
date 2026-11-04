@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
+    <StartupObject>Program</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../cli/native/home-query/HomeQuery.cs" Link="HomeQuery.cs"/>
+    <Compile Include="../../cli/native/home-control/Compatibility.cs" Link="Compatibility.cs"/>
+    <Compile Include="../../cli/native/home-control/ControlPolicy.cs" Link="ControlPolicy.cs"/>
+    <Compile Include="../../cli/native/home-control/HomeControl.cs" Link="HomeControl.cs"/>
+    <Compile Include="../../cli/native/home-common/Installation.cs" Link="Installation.cs"/>
+  </ItemGroup>
+</Project>
