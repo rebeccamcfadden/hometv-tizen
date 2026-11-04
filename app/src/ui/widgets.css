@@ -321,6 +321,8 @@
   top: 0;
   bottom: 0;
   overflow: hidden;
+  /* Keeps the nav, guide and fades inside their own page, so a popup's scrim covers all of it. */
+  isolation: isolate;
   font-family: var(--font-ui);
   color: var(--text-1);
 }
