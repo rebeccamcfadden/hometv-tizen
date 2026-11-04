@@ -4,7 +4,7 @@
 // them. Screensaver has Start after (off by default), Behind the clock (Glow or Black: Midnight has no picture), and
 // Show it now. design_preview's note on the TV's own screensaver ("HomeTV Clock") is left out: a Samsung app can't be
 // the TV's screensaver. ↓ goes to the next row's selected option and → stays within its control, as design_preview
-// does, since the controls have different widths.
+// does, since the controls have different widths; ← from a control's first option goes back to the section.
 import './look.css';
 import {
   MOTION_LABELS,
@@ -18,7 +18,7 @@ import {
   type ScreensaverAfter,
   type ScreensaverBack,
 } from '../../launcherSettings';
-import type { Key } from '../../shell/app';
+import { shell, type Key } from '../../shell/app';
 import { h } from '../../shell/dom';
 import { segmented } from '../../ui/segmented';
 import { showScreensaver } from '../../ui/screensaver';
@@ -40,8 +40,24 @@ function rightInControl(host: PaneHost, focused: HTMLElement): boolean {
   return true;
 }
 
+/**
+ * ← to the previous option of the same control; from the first, back to the section in the list (the page's spatial ←
+ * would land on a button lower down the pane).
+ */
+function leftInControl(focused: HTMLElement, section: string): boolean {
+  const seg = focused.closest('.seg');
+  if (!seg) return false;
+  const opts = Array.prototype.slice.call(seg.querySelectorAll('.seg-opt')) as HTMLElement[];
+  const prev = opts[opts.indexOf(focused) - 1];
+  const top = shell.top();
+  const target = prev || (top ? (top.el.querySelector(`[data-key="sec-${section}"]`) as HTMLElement | null) : null);
+  if (target) shell.focus(target);
+  return true;
+}
+
 export const performancePane = (host: PaneHost): Pane => ({
   onKey(key: Key, focused: HTMLElement) {
+    if (key === 'left') return leftInControl(focused, 'performance');
     return key === 'right' ? rightInControl(host, focused) : false;
   },
   render: () => [
@@ -69,6 +85,7 @@ export const performancePane = (host: PaneHost): Pane => ({
 export const screensaverPane = (host: PaneHost): Pane => ({
   onKey(key: Key, focused: HTMLElement) {
     if (key === 'right') return rightInControl(host, focused);
+    if (key === 'left') return leftInControl(focused, 'screensaver');
     if (key !== 'down') return false;
     const k = focused.getAttribute('data-key') || '';
     if (k.indexOf('seg-saver-after') === 0) host.focusKey(`seg-saver-back-${prefs.get().screensaverBack}`);
