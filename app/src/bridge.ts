@@ -61,7 +61,7 @@ interface AeroApp {
 interface Aero {
   apps: { all: AeroApp[]; ready: boolean; load(done: (ok: boolean) => void): void; launch(app: AeroApp): void };
   tiles: { describe(app: AeroApp): { artwork: string[]; title: string } };
-  homewatch: { start(): void };
+  homewatch: { start(): void; reportStartup?(trace: Record<string, unknown>): void };
   toast: { flush?: () => void };
 }
 
@@ -300,6 +300,28 @@ export const bridge = {
     } catch (e) {
       serviceFailed(e);
       return [];
+    }
+  },
+
+  /** Check mode: whether a background service ('watcher' or 'pages') answers on its port on the TV. */
+  async serviceAnswers(which: string): Promise<boolean> {
+    if (mode !== 'app') return false;
+    return (await pageChecks.service(which)).answers;
+  },
+
+  /**
+   * Check mode: leaves the (allowlisted) report with AeroTizen's watcher, in the slot its own launcher uses for a
+   * start-up trace, where the laptop reads it over the Developer Mode connection (tools/check/hometv_check.py). The
+   * watcher keeps the slot as it is given; it takes up to 4096 characters.
+   */
+  publishReport(report: Record<string, unknown>): boolean {
+    const aero = w.AeroTizen;
+    if (mode !== 'app' || !aero || !aero.homewatch.reportStartup) return false;
+    try {
+      aero.homewatch.reportStartup({ script_at: Date.now(), marks: [], hometvCheck: report });
+      return true;
+    } catch (e) {
+      return false;
     }
   },
 };

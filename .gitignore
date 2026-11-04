@@ -5,3 +5,4 @@ tizen/build/
 tizen/*.wgt
 *.log
 private/
+.cache/

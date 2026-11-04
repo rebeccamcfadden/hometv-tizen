@@ -35,6 +35,20 @@ const AERO_JS = path.resolve(__dirname, 'vendor/aerotizen/launcher/js');
 const GLUE = path.resolve(__dirname, 'app/aero-glue.js');
 const V1 = process.env.HOMETV_V1 === '1';
 const VERSION = (JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version: string }).version;
+// The check app (tools/check/, docs/check-tool.md): the page opens straight on the checks (app/src/check/main.ts in
+// place of main.ts). Always a v0 build: no sample catalogue.
+const CHECK = process.env.HOMETV_CHECK === '1';
+if (CHECK && V1) throw new Error('HOMETV_CHECK=1 builds the check app from v0: leave HOMETV_V1 unset.');
+
+const checkEntry = (): Plugin => ({
+  name: 'check-entry',
+  transformIndexHtml: {
+    order: 'pre',
+    handler(html) {
+      return CHECK ? html.replace('./src/main.ts', './src/check/main.ts').replace('<title>HomeTV</title>', '<title>HomeTV Check</title>') : html;
+    },
+  },
+});
 
 const aeroScripts = (): Plugin => ({
   name: 'aero-scripts',
@@ -65,7 +79,7 @@ const aeroScripts = (): Plugin => ({
 export default defineConfig({
   root: 'app',
   base: './',
-  plugins: [aeroScripts(), classicScript()],
+  plugins: [checkEntry(), aeroScripts(), classicScript()],
   // The shared package (docs/shared-package.md), a submodule pinned to a hometv-launcher commit.
   resolve: {
     alias: {

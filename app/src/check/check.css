@@ -1,0 +1,103 @@
+/* The check app's screen (check/screen.ts). Chromium 56: no grid, no flex gap (margins instead). */
+
+.checkmode .pill.wip {
+  background: #6b4a12;
+}
+
+.checkcols {
+  position: absolute;
+  top: 110px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.checksteps {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 460px;
+}
+
+.checkstep {
+  font-size: 28px;
+  padding: 14px 20px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  color: #8a94ab;
+}
+.checkstep.is-done {
+  color: #7fd1a0;
+}
+.checkstep.is-now {
+  background: #1c2740;
+  color: #e8ecf5;
+}
+
+.checkpanel {
+  position: absolute;
+  left: 520px;
+  right: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.checktitle {
+  font-size: 48px;
+  font-weight: 600;
+  margin: 0 0 24px;
+}
+
+.checktext {
+  font-size: 32px;
+  line-height: 1.4;
+  margin: 0 0 20px;
+  max-width: 1150px;
+}
+
+.checkbuttons {
+  margin-top: 28px;
+}
+.checkbuttons .button {
+  display: block;
+  width: 820px;
+  margin-bottom: 16px;
+  font-size: 30px;
+}
+
+.keyswatch {
+  width: 160px;
+  height: 160px;
+  border-radius: 80px;
+  margin: 8px 0 28px;
+}
+
+.phonebox {
+  margin: 8px 0 20px;
+}
+.phonebox .qr {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 32px;
+}
+.phonebox .address {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 36px;
+  font-family: Consolas, 'DejaVu Sans Mono', monospace;
+}
+
+.donebox .summary {
+  display: inline-block;
+  vertical-align: top;
+  width: 760px;
+  margin-right: 32px;
+}
+.donebox .sumline {
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+.donebox .qr {
+  display: inline-block;
+  vertical-align: top;
+}
