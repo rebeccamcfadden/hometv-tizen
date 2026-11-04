@@ -80,6 +80,7 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
   const screen = {
     label: 'Home',
     el,
+    defaultFocus: () => el.querySelector('.approw [data-focus]') as HTMLElement | null,
     setApps(apps: AppInfo[] | null) {
       lastApps = apps;
       while (el.firstChild) el.removeChild(el.firstChild);
