@@ -57,6 +57,9 @@
       "answer": "enum:back-key|reopened|other"
     },
     "home": {
+      "app": "enum:youtube|netflix|prime|disney|max|appletv|hulu|peacock|paramount|spotify|plex|tubi|pluto",
+      "opened": "enum:yes|no|not-on-tv",
+      "error": "re:errname",
       "back": "enum:running|restarted",
       "seconds": "int:0:3600",
       "answer": "enum:by-itself|reopened|other"

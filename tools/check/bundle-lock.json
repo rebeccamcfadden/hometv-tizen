@@ -1,0 +1,15 @@
+{
+  "about": "What tools/check/build-assets.mjs puts in the Windows bundle besides this repo's own files, pinned by SHA-256. The Python is the official embeddable build from python.org (signed by the Python Software Foundation); the wheels are AeroTizen's two dependencies (pyproject.toml) and theirs, from PyPI.",
+  "python": {
+    "version": "3.14.10",
+    "url": "https://www.python.org/ftp/python/3.14.10/python-3.14.10-embed-amd64.zip",
+    "sha256": "90905e64a840557d8c1bc4f5b74db3d7ee85e3ffb217611cac1c7813acea4159",
+    "pth": "python314._pth"
+  },
+  "wheels": [
+    { "name": "cryptography", "version": "50.0.2", "file": "cryptography-50.0.2-cp311-abi3-win_amd64.whl", "sha256": "7afa5a6602a9f29af1f3a2965f831bae7c9d5d597b7cbb716d41ab3b7d89879c" },
+    { "name": "cffi", "version": "2.1.1", "file": "cffi-2.1.1-cp314-cp314-win_amd64.whl", "sha256": "3222ba5d678f80a030e6afbcc33dc1ae5cb45facabb61cee2c7016b8432fde48" },
+    { "name": "pycparser", "version": "3.12", "file": "pycparser-3.12-py3-none-any.whl", "sha256": "a076f3f489b39b43ed13563a1dafe42447445bec2e294154ec5c57fcdda4c85e" },
+    { "name": "websocket-client", "version": "1.9.2", "file": "websocket_client-1.9.2-py3-none-any.whl", "sha256": "e1a673830a9c7bfa47b1cd3d5e4178f4c9651d80a4eab02c9c23a1c3ec6250ce" }
+  ]
+}

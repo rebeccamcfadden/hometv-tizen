@@ -6,3 +6,5 @@ tizen/*.wgt
 *.log
 private/
 .cache/
+release/
+__pycache__/

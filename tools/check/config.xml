@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The HomeTV check app (tools/check/, docs/check-tool.md): the same page, background services and permissions as
+     HomeTV (tizen/config.xml), under its own id (HmTvCheck0) so it never meets HomeTV, and with its own name. The
+     laptop tool installs it, reads the report and removes it again. tools/check/package-check.mjs builds it
+     unsigned; the laptop tool signs it with the TV's own certificate (AeroTizen's signer). -->
+<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="https://github.com/rebeccamcfadden/hometv-tizen/check" version="1.0.0" viewmodes="maximized">
+    <name>HomeTV Check</name>
+    <content src="dist/index.html"/>
+    <tizen:app-control>
+        <tizen:src name="dist/index.html" reload="disable"/>
+        <tizen:operation name="http://tizen.org/appcontrol/operation/main"/>
+    </tizen:app-control>
+    <tizen:application id="HmTvCheck0.HomeTVCheck" package="HmTvCheck0" required_version="3.0"/>
+    <tizen:service id="HmTvCheck0.HomeTVWatcher" on-boot="false" auto-restart="true">
+        <tizen:content src="aero/service/index.js"/>
+        <tizen:name>HomeTVCheckWatcher</tizen:name>
+        <tizen:description>Brings the check app back when Home is pressed inside an app (AeroTizen's watcher)</tizen:description>
+    </tizen:service>
+    <tizen:service id="HmTvCheck0.HomeTVPages" on-boot="false" auto-restart="true">
+        <tizen:content src="pages/pages.js"/>
+        <tizen:name>HomeTVCheckPages</tizen:name>
+        <tizen:description>HomeTV's key page service, to check that a phone reaches the TV (port 8766, home network only)</tizen:description>
+    </tizen:service>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <tizen:profile name="tv-samsung"/>
+    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="enable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+    <tizen:metadata key="http://samsung.com/tv/metadata/prelaunch.support" value="true"/>
+    <access origin="*" subdomains="true"/>
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <tizen:privilege name="http://developer.samsung.com/privilege/network.public"/>
+    <tizen:privilege name="http://tizen.org/privilege/filesystem.read"/>
+    <tizen:privilege name="http://tizen.org/privilege/filesystem.write"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
+    <tizen:privilege name="http://tizen.org/privilege/application.info"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+</widget>
