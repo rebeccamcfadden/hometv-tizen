@@ -44,7 +44,8 @@ git submodule update --init --depth 1 vendor/hometv-launcher   # once, after clo
 git -C vendor/hometv-launcher sparse-checkout set --no-cone /packages/core/   # optional: only that folder on disk
 npm install
 npm run dev      # the service with a fake 2019 Samsung on :8766, the key page's service on :8767, the page on http://localhost:5180
-npm run build    # type-checks, builds dist/, then checks it runs on the oldest TVs
+npm run build    # v0: type-checks, builds dist/, then checks it runs on the oldest TVs
+HOMETV_V1=1 npm run dev   # with v1's screens (Movies, TV Shows, Search: they need API keys) and the sample catalogue; never for a TV
 npm test
 ```
 

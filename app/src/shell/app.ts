@@ -59,7 +59,8 @@ class Shell {
   focused: HTMLElement | null = null;
   private stack: Screen[] = [];
   private tabs: Partial<Record<TabId, Screen>> = {};
-  private factories!: Record<TabId, () => Screen>;
+  /** The tabs this build has (a v0 build has Home only: features.ts). */
+  private factories!: Partial<Record<TabId, () => Screen>> & { home: () => Screen };
   private toastEl!: HTMLElement;
   private toastTimer = 0;
   private lastEl: HTMLElement | null = null;
@@ -76,7 +77,7 @@ class Shell {
   /** Other remote keys by keyCode (colour keys, Info), set by main.ts. */
   extraKeys: Record<number, () => void> = {};
 
-  init(stage: HTMLElement, factories: Record<TabId, () => Screen>, first: TabId = 'home') {
+  init(stage: HTMLElement, factories: Partial<Record<TabId, () => Screen>> & { home: () => Screen }, first: TabId = 'home') {
     this.stage = stage;
     this.factories = factories;
     this.toastEl = h('div.toast');
@@ -106,9 +107,11 @@ class Shell {
   }
 
   tab(id: TabId): Screen {
+    // A tab this build doesn't have (v1's in a v0 build) is Home.
+    if (!this.factories[id]) id = 'home';
     let s = this.tabs[id];
     if (!s) {
-      s = this.factories[id]();
+      s = this.factories[id]!();
       s.tab = id;
       this.tabs[id] = s;
     }
@@ -122,7 +125,7 @@ class Shell {
     this.stack = [s];
     this.render();
     if (s.onShow) s.onShow();
-    const nav = opts.focusNav ? (s.el.querySelector(`[data-key="nav-${id}"]`) as HTMLElement | null) : null;
+    const nav = opts.focusNav ? (s.el.querySelector(`[data-key="nav-${s.tab || id}"]`) as HTMLElement | null) : null;
     this.focus(nav || this.restoreTarget(s));
   }
 

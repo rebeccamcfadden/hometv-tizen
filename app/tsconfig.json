@@ -12,7 +12,7 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "paths": { "@hometv/core/*": ["../vendor/hometv-launcher/packages/core/src/*"] },
+    "paths": { "@hometv/core/*": ["../vendor/hometv-launcher/packages/core/src/*"], "@v1": ["./src/v1.ts"] },
     "types": ["vite/client"]
   },
   "include": ["src"]

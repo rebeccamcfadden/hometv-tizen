@@ -2,6 +2,7 @@
 // hometv-launcher's design_preview/src/ui/widgets.ts at 2bf3c2d: the nav, buttons, chips, the guide line, the C title
 // card (F46) with its service pill, people and rows. Built for Chromium 56; posters load when their card comes into view.
 import type { Offer, Title } from '@hometv/core/types.ts';
+import { V1 } from '../features';
 import { SERVICES } from '@hometv/core/services.ts';
 import { cardOffer } from '../data/offers';
 import { posterUrl } from '../data/posters';
@@ -19,11 +20,14 @@ import './widgets.css';
  * aren't ported.
  */
 export function navBar(active: TabId | null): HTMLElement {
-  const tabs: [TabId, string][] = [
-    ['home', 'Home'],
-    ['movies', 'Movies'],
-    ['tv', 'TV Shows'],
-  ];
+  // Movies, TV Shows and Search are v1 (they need API keys): not in a v0 build (features.ts).
+  const tabs: [TabId, string][] = V1
+    ? [
+        ['home', 'Home'],
+        ['movies', 'Movies'],
+        ['tv', 'TV Shows'],
+      ]
+    : [['home', 'Home']];
   let tabsRoot: HTMLElement | null = null;
   const section = (id: TabId, label: string | null) => {
     const el = label
@@ -44,7 +48,7 @@ export function navBar(active: TabId | null): HTMLElement {
     };
     return focusable(el, { group: 'nav', key: `nav-${id}`, isDefault: id === active, onOk: open });
   };
-  tabsRoot = h('div.nav-left', h('div.nav-tabs', tabs.map(([id, label]) => section(id, label))), section('search', null));
+  tabsRoot = h('div.nav-left', h('div.nav-tabs', tabs.map(([id, label]) => section(id, label))), V1 ? section('search', null) : null);
   return h('div.nav', tabsRoot);
 }
 

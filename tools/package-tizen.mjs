@@ -1,6 +1,6 @@
 // Builds tizen/HomeTVSpike.wgt: HomeTV as its own Samsung app on AeroTizen's base. Needs Tizen Studio's CLI and a
 // Samsung certificate profile made on this PC (README › Emulator); neither goes in git.
-// Usage: npm run build && node tools/package-tizen.mjs [--profile <name>]
+// Usage: npm run build && node tools/package-tizen.mjs [--profile <name>] [--allow-sample (emulator only)]
 //
 // The package holds dist/ (HomeTV's page plus AeroTizen's ES5 scripts in dist/aero/), AeroTizen's Home watcher
 // (vendor/aerotizen/launcher/service/ and the three js/ files it requires), copied with only its app id and port
@@ -27,12 +27,20 @@ function retarget(text) {
   return text.split('DclHome001.Home').join(APP_ID).split('47790').join(PORT);
 }
 
+/** The sample catalogue's titles (app/src/data/catalog.ts) in a built page. */
+export const sampleIn = (js) => /Knives Out|Past Lives|Severance/.test(js);
+
 const build = path.join(root, 'tizen', 'build');
 fs.rmSync(build, { recursive: true, force: true });
 fs.mkdirSync(path.join(build, 'aero', 'service'), { recursive: true });
 fs.mkdirSync(path.join(build, 'aero', 'js'), { recursive: true });
 fs.copyFileSync(path.join(root, 'tizen', 'config.xml'), path.join(build, 'config.xml'));
 if (!fs.existsSync(path.join(root, 'dist', 'index.html'))) throw new Error('Run `npm run build` first.');
+// No sample data on a TV, ever (docs/versions.md): a v1 build still carries the sample catalogue. --allow-sample is for
+// the emulator only.
+if (sampleIn(fs.readFileSync(path.join(root, 'dist', 'assets', 'app.js'), 'utf8')) && process.argv.indexOf('--allow-sample') < 0) {
+  throw new Error('dist/ has the sample catalogue (a HOMETV_V1=1 build). Build v0 (npm run build), or pass --allow-sample for the emulator only.');
+}
 fs.cpSync(path.join(root, 'dist'), path.join(build, 'dist'), { recursive: true });
 for (const f of fs.readdirSync(path.join(aero, 'service'))) {
   if (f.endsWith('.js')) {

@@ -3,10 +3,7 @@ import { bridge } from './bridge';
 import { shell } from './shell/app';
 import { homeScreen } from './screens/home';
 import { showChecks } from './screens/checks';
-import { libraryScreen } from './screens/library';
-// Fills routes.person, so Cast & crew and Search's People results open the person page.
-import './screens/person';
-import { searchScreen } from './screens/search';
+import { v1Tabs } from '@v1';
 
 // HomeTV for Samsung: the shell (screen stack, focus, keys) and its screens. Home first; Movies, TV Shows and Search are
 // its tabs, ported from design_preview.
@@ -32,9 +29,7 @@ async function start() {
   home.setApps(null);
   shell.init(stage, {
     home: () => home,
-    movies: () => libraryScreen('movie'),
-    tv: () => libraryScreen('show'),
-    search: searchScreen,
+    ...v1Tabs,
   });
   const homeShownMs = Date.now() - t0;
   bridge.platform.started();

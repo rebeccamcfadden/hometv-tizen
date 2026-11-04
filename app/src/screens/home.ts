@@ -11,6 +11,7 @@ import { navBar } from '../ui/widgets';
 import { showAllApps } from './allApps';
 import { showChecks } from './checks';
 import { showKeys } from './keys';
+import { V1 } from '../features';
 
 const MODE_TEXT = {
   app: `${bridge.platform.brand} app`,
@@ -93,7 +94,7 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
         onOk: () => shell.goTab('search'),
       });
       const right = bar.querySelector('.topright') as HTMLElement;
-      right.insertBefore(search, right.firstChild);
+      if (V1) right.insertBefore(search, right.firstChild);
       el.appendChild(bar);
       el.appendChild(navBar('home'));
       el.appendChild(h('h2.rowtitle', 'Apps'));
@@ -104,7 +105,8 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
       el.appendChild(row);
       const all = focusable(h('button.button', 'All apps'), { key: 'all-apps', onOk: showAllApps });
       const checks = focusable(h('button.button', 'Checks for the TV call'), { key: 'checks', onOk: showChecks });
-      const keys = focusable(h('button.button', 'API keys'), { key: 'keys', onOk: showKeys });
+      // The key page is v1: keys are only needed by v1's screens.
+      const keys = V1 ? focusable(h('button.button', 'API keys'), { key: 'keys', onOk: showKeys }) : null;
       el.appendChild(h('div.lowerrow', all, checks, keys, h('span.hint', 'Blue key or Info: Checks · the remote’s Home key leaves HomeTV')));
       shell.refocus();
     },

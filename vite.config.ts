@@ -33,6 +33,7 @@ export const AERO_SCRIPTS = [
 ];
 const AERO_JS = path.resolve(__dirname, 'vendor/aerotizen/launcher/js');
 const GLUE = path.resolve(__dirname, 'app/aero-glue.js');
+const V1 = process.env.HOMETV_V1 === '1';
 
 const aeroScripts = (): Plugin => ({
   name: 'aero-scripts',
@@ -65,7 +66,14 @@ export default defineConfig({
   base: './',
   plugins: [aeroScripts(), classicScript()],
   // The shared package (docs/shared-package.md), a submodule pinned to a hometv-launcher commit.
-  resolve: { alias: { '@hometv/core': path.resolve(__dirname, 'vendor/hometv-launcher/packages/core/src') } },
+  resolve: {
+    alias: {
+      '@hometv/core': path.resolve(__dirname, 'vendor/hometv-launcher/packages/core/src'),
+      // v1's screens only with HOMETV_V1=1 (app/src/features.ts, docs/versions.md).
+      '@v1': path.resolve(__dirname, V1 ? 'app/src/v1.ts' : 'app/src/v1-off.ts'),
+    },
+  },
+  define: { __HOMETV_V1__: JSON.stringify(V1) },
   server: { port: 5180, strictPort: true },
   build: {
     outDir: '../dist',
