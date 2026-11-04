@@ -631,12 +631,12 @@
 }
 .chev {
   display: inline-flex;
-  margin-left: 4px;
+  margin-left: 8px;
   color: var(--text-3);
 }
 .dots {
   display: inline-flex;
-  margin-left: 2px;
+  margin-left: 10px;
 }
 .dots i {
   width: 7px;

@@ -350,6 +350,7 @@ button {
 
 /* Home's tile menu › Move (screens/home.ts): the tile lifted, with arrows, while ← → move it. */
 .tile.is-moving {
+  z-index: 2;
   transform: translateY(-14px) scale(1.08);
   box-shadow: 0 0 0 4px #b9d4ff, 0 24px 48px rgba(0, 0, 0, 0.5);
 }
