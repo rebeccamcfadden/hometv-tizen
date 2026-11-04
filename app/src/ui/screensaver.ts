@@ -21,7 +21,10 @@ const MOVE_MS = 60000;
 const GLOW_STEPS = 16;
 const GLOW_STEP_MS = 500;
 
-/** ?saver=fast (a PC, `npm run dev`): the clock moves every 8 s and "5 min" means 10 s, to review it without waiting. */
+/**
+ * ?saver=fast (a PC, `npm run dev`): the clock moves every 8 s and "5 min" means 10 s, to review it without waiting;
+ * with the screensaver off it counts as 5 min (there is no Settings page to turn it on yet).
+ */
 const fast = /[?&]saver=fast\b/.test(location.search);
 const moveMs = () => (fast ? 8000 : MOVE_MS);
 
@@ -181,6 +184,7 @@ export function initScreensaver() {
   window.setInterval(() => {
     const top = shell.top();
     const home = !!top && top.tab === 'home' && (top.layer || 'screen') === 'screen';
-    if (idle.due(afterMs(prefs.get().screensaverAfter, fast), { home, visible: !document.hidden })) showScreensaver();
+    const after = prefs.get().screensaverAfter;
+    if (idle.due(afterMs(fast && after === 'off' ? '5' : after, fast), { home, visible: !document.hidden })) showScreensaver();
   }, 1000);
 }

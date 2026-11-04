@@ -39,6 +39,14 @@ port to another TV (LG's webOS: hometv-webos) copies the screens and the shell u
 | `buttons` | keyCodes for `red`, `green`, `yellow`, `blue`, `info` | 403-406, 457 |
 | `registerButtons(names)` | asks the TV to send these buttons (`'digits'` for 0-9) | `tizen.tvinputdevice.registerKey` |
 | `online()` | false only when the TV says it's offline | `navigator.onLine` |
+| `osVersion()` | the TV software's version ("5.0") for the problem report, or "" | `tizen.systeminfo.getCapability('…/platform.version')` |
+| `network()` | how the TV is connected: `{ kind: 'wifi' \| 'ethernet' \| 'none' \| 'unknown', signal, name, online }` (the nav's Wi-Fi) | `systeminfo` NETWORK, then WIFI_NETWORK (name, signal), as AeroTizen's `network.js`; 'unknown' without `tizen` |
+| `onNetworkChange(fn)` | calls `fn` when the connection changes; returns a stop function | NETWORK's change listener, and the page's `online`/`offline` |
+| `inputs.list()` | the TV's inputs (`TvInput[]`: port, device name, connected, showing), or null | `systeminfo` VIDEOSOURCE and `tvwindow.getSource`, as AeroTizen's `inputs.js`; null without `tizen` (TizenBrew too) |
+| `inputs.show(input)` | `''` when up, `'left'` (Live TV handed over), `'preview'`, or why not | HDMI and the rest: `tvwindow.setSource` + `show` full screen (privilege `tv.window`); Live TV: AeroTizen's `openNativeLiveTV` |
+| `inputs.leave()`, `inputs.onChange(fn)` | hides a shown input; calls `fn` when something is plugged in | `tvwindow.hide`; VIDEOSOURCE's change listener |
+| `openTvSettings(page)` | true when the TV's settings opened | Samsung's Settings app by `application.launch`, only when `getAppsInfo` lists `org.tizen.settings` or `com.samsung.tv.settings` (unchecked on a real TV); no known way to open a given page |
+| `settingsWhere(page)` | where a settings page is in the TV's menus, in plain words, when it can't be opened | Samsung's menus, 2018 on |
 | `started()` | tells the loader the page works (updates may then run) | `HomeTVBoot.started()` (`app/loader/boot.js`) |
 | `keyPages.onTv()` | a real TV (only the TV's port is tried) | `tizen` is there |
 | `keyPages.start()` | starts the key page's background service | an app control to `HmTvSpike0.HomeTVPages` |
