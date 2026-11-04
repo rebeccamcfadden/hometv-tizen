@@ -14,7 +14,7 @@
   "scripts": {
     "dev": "node tools/dev.mjs",
     "service": "node tools/dev-service.mjs",
-    "build": "tsc --noEmit -p app && vite build && node tools/check-legacy.mjs",
+    "build": "tsc --noEmit -p app && vite build && node tools/page-build.mjs && node tools/check-legacy.mjs",
     "check": "node tools/check-legacy.mjs",
     "test": "node --test tests/"
   },

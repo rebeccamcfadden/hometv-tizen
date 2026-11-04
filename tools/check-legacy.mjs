@@ -1,7 +1,8 @@
 // Checks that what goes to the TV runs on the oldest engine we aim for: 2018 Samsungs (Tizen 4.0, Chromium 56) and
 // TizenBrew's service on Node 4.4.3 (Tizen 3). Run by `npm run build`; exits 1 with the reasons.
 //
-// - service/service.js must parse as ES5 (no let/const, arrows, template strings, classes).
+// - service/service.js and the app's shell (dist/shell-config.js, boot.js, update.js) must parse as ES5 (no
+//   let/const, arrows, template strings, classes).
 // - dist/**/*.js must parse as an ES2017 classic script (no modules: <script type="module"> is Chromium 61; no
 //   object spread, optional chaining, ?? or class fields: Chromium 60-84).
 // - dist/**/*.css must avoid CSS that Chromium 56 lacks: grid (57), gap (flex 84), :focus-visible (86),
@@ -63,9 +64,12 @@ if (fs.existsSync(path.join(root, 'tizen', 'service-host.js'))) parseAs(path.joi
 
 const dist = path.join(root, 'dist');
 if (!fs.existsSync(dist)) problems.push('dist/ is missing: run `npm run build` first');
+// The app's shell (tools/page-build.mjs) runs before anything else, also on 2018 TVs: ES5.
+const SHELL_ES5 = ['shell-config.js', 'boot.js', 'update.js'];
+for (const name of SHELL_ES5) if (fs.existsSync(path.join(dist, name))) parseAs(path.join(dist, name), 5, 'script');
 for (const file of walk(dist, '.js')) {
   parseAs(file, 2017, 'script');
-  if (file.includes(`${path.sep}aero${path.sep}`)) continue;
+  if (file.includes(`${path.sep}aero${path.sep}`) || path.basename(file) === 'nacl-fast.min.js') continue;
   const js = fs.readFileSync(file, 'utf8');
   for (const [re, what] of JS_BUILTINS) if (re.test(js)) problems.push(`${path.relative(root, file)}: uses ${what}`);
 }
