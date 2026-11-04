@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "_root_build_backend"
+backend-path = ["cli"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+src = ["cli/src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+ignore = ["SIM105"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -W error"

@@ -1,0 +1,27 @@
+# AeroTizen: "aggressive" tier. Add on top of samsung-ads.txt only if you accept breakage.
+# Known side effects: firmware updates stop, some app downloads fail, Samsung account
+# and SmartThings features may break. Unblock a line if something you use stops working.
+
+# Firmware / notice / promo content
+samsungotn.net
+rwww.samsungotn.net
+notice.samsungcloudsolution.com
+noticefile.samsungcloudsolution.com
+infolink.pavv.co.kr
+pavv.co.kr
+
+# Samsung cloud services (home-row content, recommendations)
+samsungcloudsolution.com
+samsungcloudsolution.net
+oempprd.samsungcloudsolution.com
+oempprd.samsungcloudsolution.net
+prov.samsungcloudsolution.com
+abtauthprd.samsungcloudsolution.com
+amauthprd.samsungcloudsolution.com
+fkp.samsungcloudsolution.com
+fkp.samsungcloudsolution.net
+api-hub.samsungyosemite.com
+osb.samsungqbe.com
+
+# Third-party ad / tracking used on the platform
+static.doubleclick.net

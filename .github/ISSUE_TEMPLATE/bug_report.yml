@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a problem with the launcher or CLI
+labels: [bug]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: TV model and year
+      placeholder: e.g. UN65DU7200FXZA (2024)
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Launcher, CLI and Tizen versions
+      description: Include the versions you know. A diagnostic ZIP can provide build details.
+      placeholder: Launcher 2.4.0, CLI 2.4.0, Tizen 9
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Include the remote buttons or CLI commands you used, and whether this followed a restart or update.
+      placeholder: |-
+        1. Open AeroTizen.
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+      description: Say what you saw on the TV, including a spinner, black screen or error. Logs cannot confirm the screen contents.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostic report
+      description: |
+        Reproduce the problem, then run `aerotizen --tv TV_IP logs export` and attach the ZIP here.
+        For a Home or startup issue, add `--include-home` to collect a read-only routing snapshot (can take up to 35 seconds).
+        If the TV is unavailable, `aerotizen logs export` still exports PC logs.
+        On the tested Frame, cold-start UI events may stay queued until you open another app and return Home.
+        Logs omit console output and raw messages; third-party app IDs use temporary aliases. Name the affected app in your steps.
+        Review the ZIP before sharing it. Do not attach certificates, login tokens or your original Home backup folder.
+        This field is optional if you cannot use the CLI or have an older build.
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant command output (optional)
+      description: Remove private details before sharing.
+      render: shell
