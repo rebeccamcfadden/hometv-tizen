@@ -11,6 +11,7 @@ import { navBar } from '../ui/widgets';
 import { showAllApps } from './allApps';
 import { showChecks } from './checks';
 import { showKeys } from './keys';
+import { homeTop } from '../ui/homeTop';
 import { V1 } from '../features';
 
 const MODE_TEXT = {
@@ -87,7 +88,7 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
     setApps(apps: AppInfo[] | null) {
       lastApps = apps;
       while (el.firstChild) el.removeChild(el.firstChild);
-      const bar = topBar('HomeTV');
+      const bar = homeTop();
       // Search, as design_preview's top bar has it: ↑ from the nav reaches it.
       const search = focusable(h('button.searchbtn', { 'aria-label': 'Search', html: icon('search', 30) }), {
         key: 'search',

@@ -2,8 +2,9 @@
 // 2bf3c2d, launcher/app/src/main/java/com/hometv/launcher/Weather.java (the forecast answer, WMO codes, "now") and
 // WeatherPlace.java (Open-Meteo's place search), with the words of res/values/strings_home.xml. design_preview's
 // weather is a mock (data/places.ts), so the Android launcher is the reference for the real thing. Changes: Java to
-// TypeScript for Chromium 56; local times kept as Open-Meteo's "YYYY-MM-DDTHH:MM" strings; the search's languages
-// follow HomeTV's one region on Samsung (the TV's own language isn't read yet), and countries keep Open-Meteo's names.
+// TypeScript for Chromium 56; local times kept as Open-Meteo's "YYYY-MM-DDTHH:MM" strings; the search asks in English
+// and Swedish but not yet in the TV's own language (not read on Samsung yet); countries keep Open-Meteo's names except
+// a short list named in English by their code (Java's Locale knows every country; Chromium 56 has no Intl.DisplayNames).
 // Pure: tests run it in Node with saved answers.
 
 /** A reading at one local time at the place: the current conditions or one hour of the forecast. */
@@ -270,6 +271,34 @@ export function fold(s: string): string {
 }
 
 /**
+ * English names for the countries a Swedish answer names in Swedish ("Sverige"), by Open-Meteo's country_code, as the
+ * Android launcher names them in the TV's language; any other country keeps the answer's name.
+ */
+const COUNTRIES: Record<string, string> = {
+  SE: 'Sweden',
+  US: 'United States',
+  NO: 'Norway',
+  DK: 'Denmark',
+  FI: 'Finland',
+  IS: 'Iceland',
+  GB: 'United Kingdom',
+  IE: 'Ireland',
+  DE: 'Germany',
+  NL: 'Netherlands',
+  BE: 'Belgium',
+  FR: 'France',
+  ES: 'Spain',
+  PT: 'Portugal',
+  IT: 'Italy',
+  AT: 'Austria',
+  CH: 'Switzerland',
+  PL: 'Poland',
+  EE: 'Estonia',
+  CA: 'Canada',
+  AU: 'Australia',
+};
+
+/**
  * The places in a search answer, best match first. An answer with no "results" (nothing matched) is an empty list; a
  * result without a name or a usable position is skipped. Null when the answer isn't one (an error, not JSON).
  */
@@ -292,7 +321,7 @@ export function parseSearch(text: string): Place[] | null {
     const lat = num(r.latitude);
     const lon = num(r.longitude);
     if (!name || lat === null || lon === null || !validPosition(lat, lon)) continue;
-    out.push({ name, region: str(r, 'admin1'), country: str(r, 'country'), latitude: lat, longitude: lon });
+    out.push({ name, region: str(r, 'admin1'), country: COUNTRIES[str(r, 'country_code').toUpperCase()] || str(r, 'country'), latitude: lat, longitude: lon });
   }
   return out;
 }

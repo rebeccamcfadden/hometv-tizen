@@ -4,6 +4,9 @@ import { shell } from './shell/app';
 import { homeScreen } from './screens/home';
 import { showChecks } from './screens/checks';
 import { v1Tabs } from '@v1';
+import { pageStorage, setupDone } from './launcherSettings';
+import { showSetup } from './screens/setup';
+import { startUpdateNotice } from './ui/updateNotice';
 
 // HomeTV for Samsung: the shell (screen stack, focus, keys) and its screens. Home first; Movies, TV Shows and Search are
 // its tabs, ported from design_preview.
@@ -33,6 +36,9 @@ async function start() {
   });
   const homeShownMs = Date.now() - t0;
   bridge.platform.started();
+  startUpdateNotice(stage);
+  // First run, once: where the TV is and the weather place (screens/setup.ts). Home is already there underneath.
+  if (!setupDone(pageStorage())) showSetup();
   if (bridge.mode() === 'app') shell.toast(`Home in ${homeShownMs} ms · ${(/Chrome\/(\d+)/.exec(navigator.userAgent) || ['', '?'])[1]}`);
   if (bridge.mode() === 'tv' || bridge.mode() === 'fake-tv') {
     bridge.check('timing', {

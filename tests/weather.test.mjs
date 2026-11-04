@@ -80,9 +80,11 @@ test('place search: English and Swedish answers in one list, the same place once
     merged.map((p) => `${p.name}, ${p.country}`),
     ['Gothenburg, Sweden', 'Gothenburg, United States', 'Gothenburg City Airport, Sweden', 'Gothenburg Diversion Dam, United States', 'Gothenburg-Landvetter Airport, Sweden'],
   );
-  // Typed in Swedish, without the accent: Göteborg is the exact match, so first, though English answered first.
+  // Typed in Swedish, without the accent: Göteborg is the exact match, so first, though English answered first. Its
+  // country is named in English from its code ("Sverige" in the Swedish answer).
   const typedSv = m.mergePlaces('goteborg', [[], sv]);
   assert.equal(typedSv[0].name, 'Göteborg');
+  assert.equal(typedSv[0].country, 'Sweden');
   // A failed language is skipped; nothing matched is an empty list; an error answer isn't one.
   assert.equal(m.mergePlaces('gothenburg', [null, sv]).length, 5);
   assert.deepEqual(m.parseSearch('{"generationtime_ms":0.1}'), []);
