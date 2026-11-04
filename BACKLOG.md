@@ -9,7 +9,8 @@ Decisions and deferred work for HomeTV on Samsung. The research is in [docs/](do
 | 2026-11-04 18:04 | This repo: `rebeccamcfadden/hometv-tizen`, private until it works. |
 | 2026-11-04 18:22 | Nothing on npm yet. The first TV call checks TizenBrew and the TV's basics only. The family has a Windows laptop. |
 | 2026-11-04 18:35 | After the first call, HomeTV becomes **its own app** (works offline; [research.md › Working without the internet](docs/research.md#working-without-the-internet)), the TizenBrew module as a fallback. A public release only once it works. |
-| 2026-11-04 18:38 | Build on **AeroTizen** ([helalaou/AeroTizen](https://github.com/helalaou/AeroTizen)): HomeTV's screens on its base (install tool, certificate, Home helper), keeping its MIT licence and a clear credit. |
+| 2026-11-04 18:38 | Build on **AeroTizen** ([helalaou/AeroTizen](https://github.com/helalaou/AeroTizen)): HomeTV's screens on its base (install tool, certificate, Home helper), keeping its MIT licence and a clear credit. Plus a Tizen-only item: Continue watching (below). |
+| 2026-11-04 18:42 | The emulator's Samsung certificate: Rebecca's existing Samsung account; she signs in once on this PC herself (replaces 18:40's new account). |
 
 ## Next
 
@@ -22,11 +23,13 @@ Decisions and deferred work for HomeTV on Samsung. The research is in [docs/](do
 4. **The emulator:** Samsung's TV emulator (Tizen 10) refuses apps not signed with a Samsung certificate, which needs
    a Samsung account sign-in in a browser. Until then the page runs in a browser against the fake TV (`npm run dev`).
 
-## Later
+## Tizen-only items (Rebecca sets when)
 
-- **Continue watching (Tizen only)** (Rebecca, 18:38): AeroTizen reads Samsung's shared Continue Watching data from
-  installed apps (YouTube and Prime Video filled it on a 2024 Frame). Redesign the Figma UI a little to include an
-  optional Continue watching row. Not now.
+- **Continue watching** (Rebecca, 18:38): redesign the Figma UI a little to include an optional Continue watching
+  feature. AeroTizen reads Samsung's shared Continue Watching data from installed apps (YouTube and Prime Video
+  filled it on a 2024 Frame).
+
+## Later
 - Privacy: a guided checklist screen in HomeTV and a read-only network check ([privacy.md](docs/privacy.md#what-can-be-scripted)).
 - Native Home (AeroTizen's, experimental): only if the family's exact model is confirmed working
   ([launcher-replacement.md](docs/launcher-replacement.md)).
