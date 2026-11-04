@@ -1,11 +1,13 @@
 // Home: the app row (the TV's apps, opened through the bridge) and, for the spike, the way to the Checks screen.
 // Ported screens (Movies, TV Shows, Search, the title preview) join through the shell's tabs and the nav.
 
-import { HOME_APPS } from '../apps';
+import { HOME_APPS, homeRow, type HomeApp } from '../apps';
 import { bridge, type AppInfo } from '../bridge';
 import { h } from '../shell/dom';
 import { focusable } from '../shell/focus';
 import { shell, type Screen } from '../shell/app';
+import { navBar } from '../ui/widgets';
+import { showAllApps } from './allApps';
 import { showChecks } from './checks';
 import { showKeys } from './keys';
 
@@ -32,7 +34,7 @@ export function topBar(title: string): HTMLElement {
   return bar;
 }
 
-function tile(app: (typeof HOME_APPS)[number], info: AppInfo | null): HTMLElement {
+function tile(app: HomeApp, info: AppInfo | null): HTMLElement {
   const missing = !!info && info.installed === false;
   const el = h('button.tile' + (missing ? '.missing' : ''), { style: `background:${app.bg}` });
   el.appendChild(h('span.mark', { style: `font-weight:${app.weight};color:${app.fg}` }, app.mark));
@@ -65,22 +67,39 @@ function tile(app: (typeof HOME_APPS)[number], info: AppInfo | null): HTMLElemen
   });
 }
 
+/** Home's row as chosen in All apps: a Home app's tile, or a plain one with the name for any other app. */
+const rowApps = (): HomeApp[] =>
+  homeRow.get().map(
+    (e) => HOME_APPS.filter((a) => a.key === e.id)[0] || { key: e.id, id: e.id, name: e.name, mark: e.name, weight: 500, bg: '#1c1c1e', fg: '#ffffff' },
+  );
+
 export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void } {
   const el = h('div.screen.home');
+  let lastApps: AppInfo[] | null = null;
+  let drawnRow = '';
   const screen = {
     label: 'Home',
     el,
     setApps(apps: AppInfo[] | null) {
+      lastApps = apps;
       while (el.firstChild) el.removeChild(el.firstChild);
       el.appendChild(topBar('HomeTV'));
+      el.appendChild(navBar('home'));
       el.appendChild(h('h2.rowtitle', 'Apps'));
       const row = h('div.approw');
-      for (const app of HOME_APPS) row.appendChild(tile(app, apps ? apps.filter((a) => a.key === app.key)[0] || null : null));
+      const shown = rowApps();
+      drawnRow = JSON.stringify(shown.map((a) => a.key));
+      for (const app of shown) row.appendChild(tile(app, apps ? apps.filter((a) => a.key === app.key)[0] || null : null));
       el.appendChild(row);
+      const all = focusable(h('button.button', 'All apps'), { key: 'all-apps', onOk: showAllApps });
       const checks = focusable(h('button.button', 'Checks for the TV call'), { key: 'checks', onOk: showChecks });
       const keys = focusable(h('button.button', 'API keys'), { key: 'keys', onOk: showKeys });
-      el.appendChild(h('div.lowerrow', checks, keys, h('span.hint', 'Blue key or Info: Checks · the remote’s Home key leaves HomeTV')));
+      el.appendChild(h('div.lowerrow', all, checks, keys, h('span.hint', 'Blue key or Info: Checks · the remote’s Home key leaves HomeTV')));
       shell.refocus();
+    },
+    // Back from All apps: the row as it now is.
+    onShow() {
+      if (JSON.stringify(rowApps().map((a) => a.key)) !== drawnRow) screen.setApps(lastApps);
     },
   };
   screen.setApps(null);
