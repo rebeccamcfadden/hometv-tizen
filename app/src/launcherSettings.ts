@@ -1,9 +1,10 @@
-// HomeTV's own settings on Samsung (Settings › Weather and Region, and first run), kept in the page's localStorage
-// under `hometv-settings-v1`, and whether first run is done (`hometv-setup-done`). Home's row has its own key
-// (homeRow.ts). The shapes follow design_preview's core/settings.ts at 2bf3c2d (region, place, recentPlaces, unit),
-// with Samsung's rules: one region at a time, chosen by the person (decided 2026-11-04), and no region or place
-// until one is chosen (no sample data in v0). A place is a real Open-Meteo place, not design_preview's mock list.
-// Pure apart from the storage passed in, so tests run it in Node.
+// HomeTV's own settings on Samsung (Settings › Weather, Region, Performance and Screensaver, and first run), kept in
+// the page's localStorage under `hometv-settings-v1`, and whether first run is done (`hometv-setup-done`). Home's row
+// has its own key (homeRow.ts). The shapes follow design_preview's core/settings.ts at 2bf3c2d (region, place,
+// recentPlaces, unit, motion, F36's screensaverAfter and screensaverBack), with Samsung's rules: one region at a time,
+// chosen by the person (decided 2026-11-04), and no region or place until one is chosen (no sample data in v0). A place
+// is a real Open-Meteo place, not design_preview's mock list. Pure apart from the storage passed in, so tests run it in
+// Node.
 
 import type { KeyValueStore } from './homeRow';
 import { readPlace, samePlace, type Place } from './weather/openMeteo';
@@ -11,6 +12,23 @@ import { readPlace, samePlace, type Place } from './weather/openMeteo';
 export type Region = 'se' | 'us';
 /** °C, °F, or the region's (°F in the United States, else °C). */
 export type Unit = 'c' | 'f' | 'region';
+
+/** Settings › Performance's Motion (the nav's Settings menu steps it too). */
+export type Motion = 'full' | 'reduced' | 'off';
+/** F36: minutes Home sits untouched before the clock screensaver, or off (design_preview's default). */
+export type ScreensaverAfter = 'off' | '5' | '15' | '30';
+/**
+ * What the clock floats over. design_preview also has 'picture' (the theme's picture darkened): Midnight, v0's only
+ * theme, has no picture, so v0 has the glow and black.
+ */
+export type ScreensaverBack = 'glow' | 'black';
+
+export const MOTIONS: Motion[] = ['full', 'reduced', 'off'];
+export const MOTION_LABELS: Record<Motion, string> = { full: 'Full', reduced: 'Reduced', off: 'Off' };
+export const SCREENSAVER_AFTER: ScreensaverAfter[] = ['off', '5', '15', '30'];
+export const SCREENSAVER_AFTER_LABELS: Record<ScreensaverAfter, string> = { off: 'Off', '5': '5 min', '15': '15 min', '30': '30 min' };
+export const SCREENSAVER_BACKS: ScreensaverBack[] = ['glow', 'black'];
+export const SCREENSAVER_BACK_LABELS: Record<ScreensaverBack, string> = { glow: 'Glow', black: 'Black' };
 
 export const REGIONS: Region[] = ['se', 'us'];
 export const REGION_LABELS: Record<Region, string> = { se: 'Sweden', us: 'United States' };
@@ -28,9 +46,23 @@ export interface Prefs {
   /** The places chosen before it, newest first. */
   recentPlaces: Place[];
   unit: Unit;
+  motion: Motion;
+  /** Off until the person picks a time (design_preview's first-run value). */
+  screensaverAfter: ScreensaverAfter;
+  screensaverBack: ScreensaverBack;
 }
 
-export const defaults = (): Prefs => ({ region: null, place: null, recentPlaces: [], unit: 'region' });
+export const defaults = (): Prefs => ({
+  region: null,
+  place: null,
+  recentPlaces: [],
+  unit: 'region',
+  motion: 'full',
+  screensaverAfter: 'off',
+  screensaverBack: 'glow',
+});
+
+const oneOf = <T extends string>(list: T[], v: unknown, fallback: T): T => (list.indexOf(v as T) >= 0 ? (v as T) : fallback);
 
 /** The settings as saved; anything unreadable falls back to its default. */
 export function loadPrefs(storage: KeyValueStore | null): Prefs {
@@ -49,6 +81,9 @@ export function loadPrefs(storage: KeyValueStore | null): Prefs {
         out.recentPlaces = out.recentPlaces.slice(0, RECENT_MAX);
       }
       if (saved.unit === 'c' || saved.unit === 'f' || saved.unit === 'region') out.unit = saved.unit;
+      out.motion = oneOf(MOTIONS, saved.motion, out.motion);
+      out.screensaverAfter = oneOf(SCREENSAVER_AFTER, saved.screensaverAfter, out.screensaverAfter);
+      out.screensaverBack = oneOf(SCREENSAVER_BACKS, saved.screensaverBack, out.screensaverBack);
     }
   } catch (e) {
     // Blocked or corrupt storage: the defaults.
@@ -104,7 +139,15 @@ export function createPrefs(storage: KeyValueStore | null) {
   return {
     get: (): Readonly<Prefs> => data,
     set(patch: Partial<Prefs>) {
-      const next: Prefs = { region: data.region, place: data.place, recentPlaces: data.recentPlaces, unit: data.unit };
+      const next: Prefs = {
+        region: data.region,
+        place: data.place,
+        recentPlaces: data.recentPlaces,
+        unit: data.unit,
+        motion: data.motion,
+        screensaverAfter: data.screensaverAfter,
+        screensaverBack: data.screensaverBack,
+      };
       for (const k of Object.keys(patch) as (keyof Prefs)[]) (next as unknown as Record<string, unknown>)[k] = patch[k];
       data = next;
       savePrefs(storage, data);

@@ -34,4 +34,6 @@
     <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
     <tizen:privilege name="http://tizen.org/privilege/application.info"/>
     <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <!-- The nav's Inputs menu shows an HDMI input inside HomeTV (tvwindow), as AeroTizen's own config.xml allows. -->
+    <tizen:privilege name="http://tizen.org/privilege/tv.window"/>
 </widget>

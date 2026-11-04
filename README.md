@@ -48,8 +48,13 @@ HOMETV_V1=1 npm run dev   # with v1's screens (Movies, TV Shows, Search: they ne
 npm test
 ```
 
-The keyboard stands in for the remote: arrows, Enter for OK (held down: the hold-OK menu, as in All apps), Esc or
-Backspace for Back, C (the Blue or Info key on the remote) for the Checks screen. On Search (the magnifier at the top
+The keyboard stands in for the remote: arrows, Enter for OK (held down: the hold-OK menu, in All apps and on Home's
+apps: Move, Remove from Home, App info), Esc or Backspace for Back, C (the Blue or Info key on the remote) for the
+Checks screen. The nav's right side has Wi-Fi, Inputs and Settings; on a PC they say where the TV's own settings are.
+The clock screensaver is off until a time is picked in Settings › Screensaver; `?saver=fast` turns it on with a minute
+as 2 s (10 s of idle Home), to see it sooner.
+**Report a problem** (Settings › About, or the Checks screen) shows the last problems HomeTV noted on the TV, as text and a QR of that
+text: nothing is sent, and only allowlisted fields are kept (`app/src/report.ts`). On Search (the magnifier at the top
 of Home, or in the nav) letters and digits type, as the on-screen keyboard does. The pill at the top says where it
 runs: **On the TV**, **Fake TV on this PC**,
 or **Preview** (no service: `npm run dev -- --no-service`).
@@ -59,7 +64,8 @@ The fake TV has Netflix and Prime Video only under their pre-2020 ids and no Hul
 
 **First run** shows on the first start (until it's done or skipped; clear the page's `hometv-setup-done` in
 localStorage to see it again): the region (Sweden or the United States, one at a time) and the weather city.
-**Settings** (Home's lower row) has Home row apps, Weather, Region, First run and About. The weather under Home's clock
+**Settings** (Home's lower row, or the nav's Settings › Launcher settings) has Performance (Motion), Screensaver, Home
+row apps, Weather, Region, First run and About. The weather under Home's clock
 comes from Open-Meteo (no key, so it needs the internet): the place search asks `geocoding-api.open-meteo.com` with
 what was typed, the forecast asks `api.open-meteo.com` with the chosen place's position, at most every 30 minutes.
 Offline, Home shows the last forecast with its age, or no weather.

@@ -7,6 +7,7 @@
 // - **preview**: neither; the page still works and says so.
 
 import { HOME_APPS, keyForName } from './apps';
+import { recordError } from './errors';
 import { appControl, pageChecks } from './pageChecks';
 import type { OpenPlan } from './titleLinks';
 import { platform } from './platform';
@@ -64,7 +65,16 @@ interface Aero {
   toast: { flush?: () => void };
 }
 
-const w = window as unknown as { tizen?: unknown; AeroTizen?: Aero; hometvToast?: (text: string) => void };
+const w = window as unknown as {
+  tizen?: unknown;
+  AeroTizen?: Aero;
+  hometvToast?: (text: string) => void;
+  /** aero-glue.js calls this when AeroTizen reports an app or Live TV that didn't open. */
+  hometvFailed?: (what: string, values: { name?: string; reason?: string }) => void;
+};
+
+/** A request to the service failed (not the first look for it, which fails on a PC without one): for the error log. */
+const serviceFailed = (e: unknown) => recordError('fetch_failed', { what: 'service', reason: e instanceof Error ? e.message : '', mode });
 
 /** XMLHttpRequest with a timeout: Chromium 56 has fetch but no AbortController. */
 function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, timeoutMs = 15000): Promise<T> {
@@ -117,6 +127,24 @@ function installedFor(key: string, name?: string): AeroApp | null {
   return aero.apps.all.filter((a) => a.name.toLowerCase().indexOf(want) === 0)[0] || null;
 }
 
+async function launchApp(key: string, name?: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
+  if (mode === 'app') {
+    const app = installedFor(key, name);
+    if (!app) return { ok: false, id: null, error: 'not on this TV' };
+    w.AeroTizen!.apps.launch(app);
+    return { ok: true, id: app.id };
+  }
+  if (mode === 'preview') return { ok: true, id: null };
+  try {
+    const body = key.indexOf(APP_PREFIX) === 0 ? { id: key.slice(APP_PREFIX.length) } : { app: key };
+    const r = await request<{ ok: boolean; id: string | null; tried: { error: string | null }[] }>('POST', '/launch', body);
+    const last = r.tried[r.tried.length - 1];
+    return { ok: r.ok, id: r.id, error: r.ok ? undefined : (last && last.error) || 'not opened' };
+  } catch (e) {
+    return { ok: false, id: null, error: (e as Error).message };
+  }
+}
+
 export const bridge = {
   /** Keys, buttons, names, online state and the key page's TV side (platform.ts, docs/platform.md). */
   platform,
@@ -130,6 +158,10 @@ export const bridge = {
   /** Lets AeroTizen's scripts show their messages in HomeTV's toast. */
   setToast(fn: (text: string) => void) {
     w.hometvToast = fn;
+    w.hometvFailed = (what, values) => {
+      if (what === 'live-tv') recordError('input_failed', { input: 'tv', reason: values.reason });
+      else recordError('launch_failed', { app: keyForName(values.name || '') || 'other', reason: values.reason || 'it failed to start', mode });
+    };
     if (w.AeroTizen && w.AeroTizen.toast && w.AeroTizen.toast.flush) w.AeroTizen.toast.flush();
   },
 
@@ -175,8 +207,16 @@ export const bridge = {
       const r = await request<{ apps: AppInfo[] }>('GET', '/apps');
       return r.apps;
     } catch (e) {
+      serviceFailed(e);
       return null;
     }
+  },
+
+  /** The TV's own id for a Home row entry (App info): "app:" entries carry it; Home's tiles have it in the own app. */
+  appId(key: string): string | null {
+    if (key.indexOf(APP_PREFIX) === 0) return key.slice(APP_PREFIX.length);
+    const app = mode === 'app' ? installedFor(key) : null;
+    return app ? app.id : null;
   },
 
   /** The TV's own artwork for a Home tile, when it has some (AeroTizen reads Samsung's icon cache). */
@@ -205,6 +245,7 @@ export const bridge = {
       const r = await request<{ apps: { id: string; name: string }[]; listed: boolean }>('GET', '/apps/all');
       return r.listed ? r.apps.map(toTvApp) : null;
     } catch (e) {
+      serviceFailed(e);
       return null;
     }
   },
@@ -215,21 +256,9 @@ export const bridge = {
    * by "app:" and the TV's id for any app All apps lists.
    */
   async launch(key: string, name?: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
-    if (mode === 'app') {
-      const app = installedFor(key, name);
-      if (!app) return { ok: false, id: null, error: 'not on this TV' };
-      w.AeroTizen!.apps.launch(app);
-      return { ok: true, id: app.id };
-    }
-    if (mode === 'preview') return { ok: true, id: null };
-    try {
-      const body = key.indexOf(APP_PREFIX) === 0 ? { id: key.slice(APP_PREFIX.length) } : { app: key };
-      const r = await request<{ ok: boolean; id: string | null; tried: { error: string | null }[] }>('POST', '/launch', body);
-      const last = r.tried[r.tried.length - 1];
-      return { ok: r.ok, id: r.id, error: r.ok ? undefined : (last && last.error) || 'not opened' };
-    } catch (e) {
-      return { ok: false, id: null, error: (e as Error).message };
-    }
+    const r = await launchApp(key, name);
+    if (!r.ok) recordError('launch_failed', { app: key, reason: r.error, mode });
+    return r;
   },
 
   /**
@@ -244,7 +273,8 @@ export const bridge = {
       const error = await appControl(app.id, plan.url, plan.payload);
       if (!error) return { ok: true, id: app.id, linked: true };
     }
-    const r = await bridge.launch(plan.app.key, plan.app.name);
+    const r = await launchApp(plan.app.key, plan.app.name);
+    if (!r.ok) recordError('title_failed', { app: plan.app.key, reason: r.error, mode });
     return { ok: r.ok, id: r.id, linked: false, error: r.error };
   },
 
@@ -268,6 +298,7 @@ export const bridge = {
     try {
       return await request<Result[]>('GET', '/results');
     } catch (e) {
+      serviceFailed(e);
       return [];
     }
   },

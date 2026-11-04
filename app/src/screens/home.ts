@@ -5,12 +5,13 @@ import { HOME_APPS, homeRow, type HomeApp } from '../apps';
 import { bridge, type AppInfo } from '../bridge';
 import { h } from '../shell/dom';
 import { focusable } from '../shell/focus';
-import { shell, type Screen } from '../shell/app';
+import { shell, type Key, type Screen } from '../shell/app';
 import { icon } from '../ui/icons';
 import { navBar } from '../ui/widgets';
 import { showAllApps } from './allApps';
 import { showChecks } from './checks';
 import { showKeys } from './keys';
+import { tileMenu } from './homeTileMenu';
 import { showSettings } from './settings';
 import { homeTop } from '../ui/homeTop';
 import { V1 } from '../features';
@@ -38,9 +39,9 @@ export function topBar(title: string): HTMLElement {
   return bar;
 }
 
-function tile(app: HomeApp, info: AppInfo | null): HTMLElement {
+function tile(app: HomeApp, info: AppInfo | null, moving = false): HTMLElement {
   const missing = !!info && info.installed === false;
-  const el = h('button.tile' + (missing ? '.missing' : ''), { style: `background:${app.bg}` });
+  const el = h('button.tile' + (missing ? '.missing' : '') + (moving ? '.is-moving' : ''), { style: `background:${app.bg}`, 'data-row-id': app.key });
   el.appendChild(h('span.mark', { style: `font-weight:${app.weight};color:${app.fg}` }, app.mark));
   // The TV's own artwork for the app when it has some (Samsung's icon cache); the wordmark stays underneath.
   const art = bridge.artwork(app.key);
@@ -57,6 +58,10 @@ function tile(app: HomeApp, info: AppInfo | null): HTMLElement {
     el.appendChild(img);
   }
   el.appendChild(h('span.name', missing ? `${app.name} · not on this TV` : app.name));
+  if (moving) {
+    el.appendChild(h('span.move-arrow.move-arrow--l', { html: icon('chevLeft', 28) }));
+    el.appendChild(h('span.move-arrow.move-arrow--r', { html: icon('chevRight', 28) }));
+  }
   return focusable(el, {
     group: 'apps',
     key: 'app-' + app.key,
@@ -81,6 +86,24 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
   const el = h('div.screen.home');
   let lastApps: AppInfo[] | null = null;
   let drawnRow = '';
+  let row: HTMLElement | null = null;
+  /** Draws the row's tiles (all of Home only when the apps change), focusing `focusId`'s tile if given. */
+  const fillRow = (focusId?: string) => {
+    if (!row) return;
+    while (row.firstChild) row.removeChild(row.firstChild);
+    const shown = rowApps();
+    drawnRow = JSON.stringify(shown.map((a) => a.key));
+    const lifted = menu.moving();
+    for (const app of shown) row.appendChild(tile(app, lastApps ? lastApps.filter((a) => a.key === app.key)[0] || null : null, app.key === lifted));
+    if (!shown.length) row.appendChild(h('div.approw-empty', 'No apps on Home. Hold OK on an app in All apps to add it.'));
+    if (row.nextSibling && (row.nextSibling as HTMLElement).className === 'movehint') el.removeChild(row.nextSibling);
+    if (lifted) el.insertBefore(h('div.movehint', '← → moves it · OK puts it down · Back puts it back'), row.nextSibling);
+    if (focusId !== undefined) {
+      const t = row.querySelector(`[data-key="${CSS.escape('app-' + focusId)}"]`) as HTMLElement | null;
+      shell.focus(t || (el.querySelector('[data-key="all-apps"]') as HTMLElement | null));
+    }
+  };
+  const menu = tileMenu({ redraw: (id) => fillRow(id === undefined ? '' : id) });
   const screen = {
     label: 'Home',
     el,
@@ -100,11 +123,9 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
       el.appendChild(bar);
       el.appendChild(navBar('home'));
       el.appendChild(h('h2.rowtitle', 'Apps'));
-      const row = h('div.approw');
-      const shown = rowApps();
-      drawnRow = JSON.stringify(shown.map((a) => a.key));
-      for (const app of shown) row.appendChild(tile(app, apps ? apps.filter((a) => a.key === app.key)[0] || null : null));
+      row = h('div.approw');
       el.appendChild(row);
+      fillRow();
       const all = focusable(h('button.button', 'All apps'), { key: 'all-apps', onOk: showAllApps });
       const settings = focusable(h('button.button', 'Settings'), { key: 'settings', onOk: () => showSettings() });
       const checks = focusable(h('button.button', 'Checks for the TV call'), { key: 'checks', onOk: showChecks });
@@ -113,6 +134,9 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
       el.appendChild(h('div.lowerrow', all, settings, checks, keys, h('span.hint', 'Blue key or Info: Checks · the remote’s Home key leaves HomeTV')));
       shell.refocus();
     },
+    // Hold OK on a tile: Move, Remove from Home, App info (homeTileMenu.ts); while moving, it has the keys.
+    onLongOk: (f: HTMLElement | null) => menu.onLongOk(f),
+    onKey: (key: Key, f: HTMLElement | null) => menu.onKey(key, f),
     // Back from All apps: the row as it now is.
     onShow() {
       if (JSON.stringify(rowApps().map((a) => a.key)) !== drawnRow) screen.setApps(lastApps);

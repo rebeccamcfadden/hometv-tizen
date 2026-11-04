@@ -1,13 +1,13 @@
-// Settings (design_preview's screens/settings.ts at 2bf3c2d, "Launcher settings"), slimmed for v0 on Samsung: Home row
-// apps, Weather, Region and About, and a way back into first run. Sections on the left with their values; the pane on
+// Settings (design_preview's screens/settings.ts at 2bf3c2d, "Launcher settings"), slimmed for v0 on Samsung:
+// Performance (Motion), Screensaver, Home row apps, Weather, Region and About, and a way back into first run. Sections on the left with their values; the pane on
 // the right shows the focused section at once. → or OK enters the pane (its border brightens), ← from its left edge
 // returns to the section. Back in the pane leaves a sub-state first (Change city, an app being moved), then the pane;
 // Back on the list closes the page. Changes save at once. Not in v0 (docs/versions.md): account, streaming services,
-// stores, API keys, features, theme, performance, screensaver, notes, the phone remote, Open on start, Default Home.
+// stores, API keys, features, theme, notes, the phone remote, Open on start, Default Home.
 import './settings.css';
 import { homeRow } from '../apps';
 import { bridge } from '../bridge';
-import { prefs, REGION_LABELS } from '../launcherSettings';
+import { MOTION_LABELS, prefs, REGION_LABELS, SCREENSAVER_AFTER_LABELS } from '../launcherSettings';
 import { shell, type Screen } from '../shell/app';
 import { h, replace } from '../shell/dom';
 import { focusable } from '../shell/focus';
@@ -17,13 +17,14 @@ import { aboutValue } from '../updates';
 import { PAGE_VERSION } from '../version';
 import { aboutPane } from './panes/about';
 import { appsPane } from './panes/apps';
+import { performancePane, screensaverPane } from './panes/look';
 import type { Pane, PaneHost } from './panes/pane';
 import { regionPane } from './panes/region';
 import { weatherPane } from './panes/weather';
 import { showSetup } from './setup';
 import { weather } from '../weather/homeWeather';
 
-export type SectionId = 'apps' | 'weather' | 'region' | 'setup' | 'about';
+export type SectionId = 'performance' | 'screensaver' | 'apps' | 'weather' | 'region' | 'setup' | 'about';
 
 interface Section {
   id: SectionId;
@@ -34,6 +35,9 @@ interface Section {
 }
 
 const SECTIONS: Section[] = [
+  { id: 'performance', label: 'Performance', icon: 'gauge', value: () => `Motion ${MOTION_LABELS[prefs.get().motion].toLowerCase()}` },
+  // F36: the clock screensaver, off by default.
+  { id: 'screensaver', label: 'Screensaver', icon: 'clock', value: () => SCREENSAVER_AFTER_LABELS[prefs.get().screensaverAfter] },
   { id: 'apps', label: 'Home row apps', icon: 'apps', value: () => String(homeRow.get().length) },
   { id: 'weather', label: 'Weather', icon: 'cloud', value: () => (prefs.get().place ? prefs.get().place!.name : 'Not set') },
   { id: 'region', label: 'Region', icon: 'pin', value: () => (prefs.get().region ? REGION_LABELS[prefs.get().region!] : 'Not set') },
@@ -43,7 +47,7 @@ const SECTIONS: Section[] = [
 
 /** design_preview's groups (F23), with the sections v0 has. */
 const GROUPS: { title: string; items: SectionId[] }[] = [
-  { title: 'Home', items: ['apps', 'weather'] },
+  { title: 'Home & look', items: ['performance', 'screensaver', 'apps', 'weather'] },
   { title: 'This TV', items: ['region', 'setup', 'about'] },
 ];
 
@@ -82,6 +86,8 @@ export function settingsScreen(initial: SectionId = 'apps'): Screen {
     setup: false,
   };
   const panes: Record<SectionId, Pane> = {
+    performance: performancePane(host),
+    screensaver: screensaverPane(host),
     apps: appsPane(host),
     weather: weatherPane(host),
     region: regionPane(),

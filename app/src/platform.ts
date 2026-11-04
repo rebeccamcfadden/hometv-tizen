@@ -4,9 +4,32 @@
 
 import type { Key } from './shell/app';
 
+/** What systeminfo's properties hold, as far as HomeTV reads them (NETWORK, WIFI_NETWORK, ETHERNET_NETWORK, VIDEOSOURCE). */
+interface SysValue {
+  ipAddress?: string;
+  networkType?: string;
+  ssid?: string;
+  signalStrength?: number;
+  connected?: VideoSource[];
+  disconnected?: VideoSource[];
+}
+
+/** One of the TV's inputs as Samsung's VIDEOSOURCE lists it. */
+interface VideoSource {
+  type: string;
+  number: number;
+  signal?: boolean;
+  /** The name the TV shows for the port: a device's name from HDMI-CEC, or one the household gave it. */
+  editName?: string;
+}
+
 type Tz = {
   ApplicationControl: new (operation: string) => unknown;
-  application: { launchAppControl(c: unknown, id: string, ok: null, err: null): void };
+  application: {
+    launchAppControl(c: unknown, id: string, ok: null, err: null): void;
+    launch?(id: string, ok: (() => void) | null, err: ((e?: unknown) => void) | null): void;
+    getAppsInfo?(ok: (apps: { id: string; name: string }[]) => void, err?: () => void): void;
+  };
   tvinputdevice?: { registerKey(name: string): void };
   time?: {
     getCurrentDateTime(): { getFullYear(): number; getMonth(): number; getDate(): number; getDay(): number; getHours(): number; getMinutes(): number };
@@ -14,7 +37,16 @@ type Tz = {
     getTimeFormat(): string;
   };
   systeminfo?: {
-    getPropertyValue(p: string, ok: (v: { ipAddress?: string }) => void, err?: () => void): void;
+    getPropertyValue(p: string, ok: (v: SysValue) => void, err?: () => void): void;
+    addPropertyValueChangeListener?(p: string, fn: () => void): number;
+    getCapability?(key: string): unknown;
+    removePropertyValueChangeListener?(id: number): void;
+  };
+  tvwindow?: {
+    getSource?(win: 'MAIN'): VideoSource;
+    setSource(src: VideoSource, ok: () => void, err: (e?: unknown) => void, win: 'MAIN'): void;
+    show(ok: () => void, err: (e?: unknown) => void, rect: string[], win: 'MAIN'): void;
+    hide(ok: () => void, err: () => void, win: 'MAIN'): void;
   };
   filesystem?: {
     /** Tizen 5.0 and newer. */
@@ -100,6 +132,142 @@ const PAGES_SERVICE_ID = 'HmTvSpike0.HomeTVPages';
 /** The service's TOKEN_FILE, in the app's private folder (service/pages.js). */
 const TOKEN_FILE = 'wgt-private/hometv-pages-tv-token';
 
+/** How the TV is connected: Wi-Fi, a cable, not at all, or it won't say (a PC, TizenBrew's page). */
+export type NetKind = 'wifi' | 'ethernet' | 'none' | 'unknown';
+
+export interface NetState {
+  kind: NetKind;
+  /** Wi-Fi signal from 0 to 1, when the TV says. */
+  signal: number | null;
+  /** The Wi-Fi network's name, when the TV says. Shown on the TV only: never logged or reported. */
+  name: string;
+  /** false only when the TV says it's offline. */
+  online: boolean;
+}
+
+/** One of the TV's inputs, for the nav's Inputs menu. */
+export interface TvInput {
+  /** "HDMI:2", "TV:1": stable for a port. */
+  id: string;
+  kind: 'hdmi' | 'av' | 'tv';
+  /** The port: "HDMI 2", "AV 1", "Live TV". */
+  port: string;
+  /** The device's name when the TV knows it (HDMI-CEC, or a name the household gave the port), else "". */
+  device: string;
+  connected: boolean;
+  /** What the TV shows now. */
+  active: boolean;
+  /** The TV's own record, handed back to show(). */
+  raw: unknown;
+}
+
+/** The TV's own settings pages the nav's menus point to. */
+export type TvPage = 'main' | 'network' | 'picture' | 'sound' | 'inputs';
+
+/** Where each page is in Samsung's menus, for when HomeTV can't open it (2018-2024 menus; newer ones in brackets). */
+const SETTINGS_WHERE: Record<TvPage, string> = {
+  main: 'Press the remote’s Home button, then Settings.',
+  network: 'Press Home, then Settings › General › Network (Settings › Connection › Network on newer TVs).',
+  picture: 'Press Home, then Settings › Picture.',
+  sound: 'Press Home, then Settings › Sound.',
+  inputs: 'Press Source on the remote, or Home › Source (Connected Devices on newer TVs).',
+};
+
+/**
+ * Samsung's own Settings app, opened only when the TV lists it (getAppsInfo). Unchecked on a real TV: the ids are the
+ * ones seen in Samsung app lists; the TV's menus may not be an app a page can open at all (docs/platform.md).
+ */
+const SETTINGS_APP_IDS = ['org.tizen.settings', 'com.samsung.tv.settings'];
+
+const PORT_NAMES: Record<string, string> = { COMP: 'Component', SVIDEO: 'S-Video', SCART: 'SCART', PC: 'PC', DVI: 'DVI', AV: 'AV' };
+
+/**
+ * A device's name in `editName`, or "" for the TV's placeholders ("HDMI 2", "Unknown device", their Italian forms).
+ * The placeholder filter is AeroTizen's (vendor/aerotizen/launcher/js/inputs.js, hasRecognizedDevice; MIT).
+ */
+export function deviceName(s: { type: string; editName?: unknown }): string {
+  if (!s || s.type !== 'HDMI' || typeof s.editName !== 'string') return '';
+  const name = s.editName.replace(/\s+/g, ' ').trim();
+  if (!name) return '';
+  const ordinary = name.toLowerCase().replace(/[_.-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (
+    /^(?:hdmi(?: \d+)?|ingresso(?: hdmi)?(?: \d+)?|source(?: hdmi)?(?: \d+)?|input(?: hdmi)?(?: \d+)?|sorgente(?: hdmi)?(?: \d+)?|unknown(?: device)?|unrecognized(?: device)?|unrecognised(?: device)?|dispositivo sconosciuto|sconosciuto|non riconosciuto|nessun dispositivo|no device|not connected|non collegato|disconnected)$/i.test(
+      ordinary,
+    )
+  )
+    return '';
+  return name.slice(0, 40);
+}
+
+/**
+ * The Inputs menu's list from VIDEOSOURCE: one entry per port (a port in both of Samsung's lists counts once, as
+ * connected, keeping a device name either list had), media players left out; HDMI and the other ports, connected
+ * first, then Live TV. As AeroTizen's inputs.js builds it.
+ */
+export function inputsFrom(info: { connected?: VideoSource[]; disconnected?: VideoSource[] } | null, current: VideoSource | null): TvInput[] {
+  const byId: Record<string, TvInput> = {};
+  const order: string[] = [];
+  const add = (list: VideoSource[] | undefined, connected: boolean) => {
+    for (const s of list || []) {
+      if (!s || typeof s.type !== 'string' || s.type === 'MEDIA') continue;
+      const num = Number(s.number) || 1;
+      const id = `${s.type}:${num}`;
+      const kind: TvInput['kind'] = s.type === 'TV' ? 'tv' : s.type === 'HDMI' ? 'hdmi' : 'av';
+      const entry: TvInput = {
+        id,
+        kind,
+        port: kind === 'tv' ? 'Live TV' : `${kind === 'hdmi' ? 'HDMI' : PORT_NAMES[s.type] || s.type} ${num}`,
+        device: deviceName(s),
+        connected: connected || s.signal === true,
+        active: !!current && current.type === s.type && Number(current.number) === num,
+        raw: s,
+      };
+      const prior = byId[id];
+      if (!prior) {
+        byId[id] = entry;
+        order.push(id);
+        continue;
+      }
+      const keep = !prior.connected && entry.connected ? entry : prior;
+      const other = keep === entry ? prior : entry;
+      if (!keep.device) keep.device = other.device;
+      byId[id] = keep;
+    }
+  };
+  add((info && info.connected) || undefined, true);
+  add((info && info.disconnected) || undefined, false);
+  const rank = (i: TvInput) => (i.kind === 'hdmi' ? 0 : i.kind === 'av' ? 1 : 2);
+  const type = (i: TvInput) => i.id.split(':')[0];
+  const num = (i: TvInput) => Number(i.id.split(':')[1]);
+  return order
+    .map((id) => byId[id])
+    .sort((a, b) => rank(a) - rank(b) || Number(b.connected) - Number(a.connected) || (type(a) < type(b) ? -1 : type(a) > type(b) ? 1 : num(a) - num(b)));
+}
+
+/** AeroTizen's native Live TV handoff (vendor/aerotizen/launcher/js/native-navigation.js), when it is loaded. */
+const aeroLiveTv = (): ((src: unknown) => boolean) | null => {
+  const a = (window as unknown as { AeroTizen?: { homewatch?: { openNativeLiveTV?: (src: unknown) => boolean } } }).AeroTizen;
+  return a && a.homewatch && typeof a.homewatch.openNativeLiveTV === 'function' ? a.homewatch.openNativeLiveTV : null;
+};
+
+/** Calls `fn` with the first answer; `fallback` after `ms` if none came. */
+function answer<T>(ms: number, fallback: T, ask: (done: (v: T) => void) => void): Promise<T> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (v: T) => {
+      if (settled) return;
+      settled = true;
+      resolve(v);
+    };
+    setTimeout(() => done(fallback), ms);
+    try {
+      ask(done);
+    } catch (e) {
+      done(fallback);
+    }
+  });
+}
+
 export const platform = {
   /** Shown to people: "Samsung", in "Samsung app", the checks and reports. */
   brand: 'Samsung',
@@ -129,6 +297,190 @@ export const platform = {
 
   /** false only when the TV says it's offline. */
   online: (): boolean => navigator.onLine !== false,
+
+  /** The TV software's version ("5.0"), for the problem report; "" when unknown. */
+  osVersion(): string {
+    const t = tz();
+    try {
+      const v = t && t.systeminfo && t.systeminfo.getCapability ? t.systeminfo.getCapability('http://tizen.org/feature/platform.version') : '';
+      return typeof v === 'string' && /^\d{1,2}(\.\d{1,2}){0,3}$/.test(v) ? v : '';
+    } catch (e) {
+      return '';
+    }
+  },
+
+  /**
+   * How the TV is connected (the nav's Wi-Fi icon and menu): systeminfo's NETWORK, then WIFI_NETWORK for the name and
+   * signal, as AeroTizen's network.js reads them. Without `tizen` (a PC, TizenBrew's page): 'unknown', or 'none' when
+   * the browser says it's offline.
+   */
+  network(): Promise<NetState> {
+    const online = navigator.onLine !== false;
+    const fallback: NetState = { kind: online ? 'unknown' : 'none', signal: null, name: '', online };
+    const t = tz();
+    const sys = t && t.systeminfo;
+    if (!sys) return Promise.resolve(fallback);
+    return answer(2500, fallback, (done) =>
+      sys.getPropertyValue(
+        'NETWORK',
+        (n) => {
+          const type = n && n.networkType;
+          if (type === 'ETHERNET') return done({ kind: 'ethernet', signal: null, name: '', online });
+          if (type === 'NONE') return done({ kind: 'none', signal: null, name: '', online: false });
+          if (type !== 'WIFI') return done(fallback);
+          const plain: NetState = { kind: 'wifi', signal: null, name: '', online };
+          try {
+            sys.getPropertyValue(
+              'WIFI_NETWORK',
+              (w) => {
+                const s = w && w.signalStrength;
+                done({
+                  kind: 'wifi',
+                  signal: typeof s === 'number' && isFinite(s) && s >= 0 && s <= 1 ? s : null,
+                  name: w && typeof w.ssid === 'string' ? w.ssid.slice(0, 64) : '',
+                  online,
+                });
+              },
+              () => done(plain),
+            );
+          } catch (e) {
+            done(plain);
+          }
+        },
+        () => done(fallback),
+      ),
+    );
+  },
+
+  /** Calls `fn` when the connection changes (the TV's NETWORK listener, and the browser's online and offline). */
+  onNetworkChange(fn: () => void): () => void {
+    window.addEventListener('online', fn);
+    window.addEventListener('offline', fn);
+    const t = tz();
+    let id: number | null = null;
+    if (t && t.systeminfo && t.systeminfo.addPropertyValueChangeListener) {
+      try {
+        id = t.systeminfo.addPropertyValueChangeListener('NETWORK', fn);
+      } catch (e) {
+        id = null;
+      }
+    }
+    return () => {
+      window.removeEventListener('online', fn);
+      window.removeEventListener('offline', fn);
+      if (id !== null && t && t.systeminfo && t.systeminfo.removePropertyValueChangeListener) {
+        try {
+          t.systeminfo.removePropertyValueChangeListener(id);
+        } catch (e) {
+          // Already gone.
+        }
+      }
+    };
+  },
+
+  /**
+   * The TV's inputs (the nav's Inputs menu): systeminfo's VIDEOSOURCE with the device names the TV knows, and
+   * tvwindow to show one inside HomeTV, as AeroTizen's inputs.js does. Live TV goes to Samsung's own viewer through
+   * AeroTizen's handoff (native-navigation.js), so the remote's channel keys work.
+   */
+  inputs: {
+    /** The inputs, or null when the TV won't list them (a PC, TizenBrew's page). */
+    list(): Promise<TvInput[] | null> {
+      const t = tz();
+      const sys = t && t.systeminfo;
+      if (!sys) return Promise.resolve(null);
+      return answer<TvInput[] | null>(2500, null, (done) =>
+        sys.getPropertyValue(
+          'VIDEOSOURCE',
+          (info) => {
+            let current: VideoSource | null = null;
+            try {
+              if (t!.tvwindow && t!.tvwindow.getSource) current = t!.tvwindow.getSource('MAIN');
+            } catch (e) {
+              // Some firmware refuses this while no video window is up.
+            }
+            done(inputsFrom(info, current));
+          },
+          () => done(null),
+        ),
+      );
+    },
+    /**
+     * Shows an input: '' when it is up (HDMI and the others inside HomeTV, full screen: the caller covers the page and
+     * calls leave() on Back), 'left' when Samsung's Live TV took over, 'preview' without the TV, else why it failed.
+     */
+    show(input: TvInput): Promise<string> {
+      const t = tz();
+      if (!t) return Promise.resolve('preview');
+      if (input.kind === 'tv') {
+        const live = aeroLiveTv();
+        if (live && live(input.raw) !== false) return Promise.resolve('left');
+      }
+      const win = t.tvwindow;
+      if (!win) return Promise.resolve('this TV doesn’t let apps show its inputs');
+      return answer(6000, 'the TV didn’t answer', (done) =>
+        win.setSource(
+          input.raw as VideoSource,
+          () => win.show(() => done(''), () => done('the TV couldn’t show it'), ['0px', '0px', '1920px', '1080px'], 'MAIN'),
+          () => done('the TV couldn’t switch to it'),
+          'MAIN',
+        ),
+      );
+    },
+    /** Hides an input shown by show(). */
+    leave(): void {
+      const t = tz();
+      if (!t || !t.tvwindow) return;
+      try {
+        t.tvwindow.hide(() => {}, () => {}, 'MAIN');
+      } catch (e) {
+        // Already hidden.
+      }
+    },
+    /** Calls `fn` when something is plugged in or out; returns a function that stops it. */
+    onChange(fn: () => void): () => void {
+      const t = tz();
+      if (!t || !t.systeminfo || !t.systeminfo.addPropertyValueChangeListener) return () => {};
+      let id: number | null = null;
+      try {
+        id = t.systeminfo.addPropertyValueChangeListener('VIDEOSOURCE', fn);
+      } catch (e) {
+        return () => {};
+      }
+      return () => {
+        try {
+          if (id !== null && t.systeminfo && t.systeminfo.removePropertyValueChangeListener) t.systeminfo.removePropertyValueChangeListener(id);
+        } catch (e) {
+          // Already gone.
+        }
+      };
+    },
+  },
+
+  /**
+   * Opens the TV's own settings: true when it opened (Samsung's Settings app, when the TV lists one; its main page,
+   * since no way to open a given page is known). false: say where the page is instead (settingsWhere).
+   */
+  openTvSettings(page: TvPage): Promise<boolean> {
+    void page;
+    const t = tz();
+    const app = t && t.application;
+    if (!app || !app.getAppsInfo || !app.launch) return Promise.resolve(false);
+    return answer(4000, false, (done) =>
+      app.getAppsInfo!(
+        (apps) => {
+          const ids = apps.map((a) => a.id);
+          const id = SETTINGS_APP_IDS.filter((x) => ids.indexOf(x) >= 0)[0];
+          if (!id) return done(false);
+          app.launch!(id, () => done(true), () => done(false));
+        },
+        () => done(false),
+      ),
+    );
+  },
+
+  /** Where a settings page is on this TV, in plain words, for when openTvSettings can't open it. */
+  settingsWhere: (page: TvPage): string => SETTINGS_WHERE[page],
 
   /** Tells the installed app's loader (app/loader/boot.js) the page works; its updater may then look for a newer one. */
   started(): void {

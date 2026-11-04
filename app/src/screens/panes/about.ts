@@ -1,9 +1,12 @@
 // Settings › About, from design_preview's screens/panes/misc.ts aboutPane at 2bf3c2d, as far as it applies on Samsung:
-// the version, and where updates stand (updates.ts: signed page updates, shown at the next start, so no Install
-// button). Not here: the catalogue cache, TMDB's notice, licences and Clear cache (they come with v1's catalogue).
+// the version, where updates stand (updates.ts: signed page updates, shown at the next start, so no Install button),
+// and Report a problem (not in design_preview: HomeTV's own problem report, screens/report.ts). Not here: the
+// catalogue cache, TMDB's notice, licences and Clear cache (they come with v1's catalogue).
 import { bridge } from '../../bridge';
 import { ago } from '../../clockText';
 import { h } from '../../shell/dom';
+import { button } from '../../ui/widgets';
+import { showReport } from '../report';
 import { updateLine } from '../../updates';
 import { PAGE_VERSION } from '../../version';
 import type { Pane } from './pane';
@@ -33,6 +36,8 @@ export const aboutPane = (): Pane => ({
         h('div.perf-title', 'Updates'),
         h('div.about-update-line', updateLine(u, (ms) => ago(ms, now))),
       ),
+      // Report a problem: the problems HomeTV noted on this TV, to read out or scan (screens/report.ts).
+      h('div.pane-actions', button('Report a problem', { icon: 'alert', key: 'about-report', onOk: showReport })),
       h('div.pane-credits', 'Weather data by Open-Meteo.com (CC BY 4.0). ' + bridge.platform.credits),
     ];
   },
