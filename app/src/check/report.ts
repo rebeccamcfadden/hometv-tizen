@@ -54,9 +54,13 @@ export const KNOWN_APPS: string[] = Object.keys(schema.knownApps);
 export const KNOWN_APP_NAMES: Record<string, string> = {};
 for (const k of KNOWN_APPS) KNOWN_APP_NAMES[k] = (schema.knownApps as Record<string, { name: string }>)[k].name;
 
-/** A short error code from a TV error's text ("NotFoundError: …" → "NotFoundError"); the text itself never leaves. */
+/**
+ * A short error code from a TV error's text ("NotFoundError: …" → "NotFoundError", our own "NotOpened" as it is);
+ * anything else is just "Error". The text itself never leaves.
+ */
 export function errorName(error: string | undefined | null): string | undefined {
   if (!error) return undefined;
-  const m = /^\s*([A-Za-z]{1,40})(?=[:\s]|$)/.exec(error);
+  if (/^[A-Za-z]{1,40}$/.test(error)) return error;
+  const m = /^\s*([A-Za-z]{1,40})\s*:/.exec(error);
   return m ? m[1] : 'Error';
 }

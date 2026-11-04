@@ -786,7 +786,7 @@ def dry_tv_report():
     """A made-up TV report, as the check page would leave it (dry run only)."""
     return {
         "schema": "hometv-check-1", "checkApp": "1.0.0", "finished": True, "step": "done",
-        "tv": {"model": "UE43TU7000", "tizen": "5.5", "chromium": 69, "screen": "1920x1080"},
+        "tv": {"model": "UE43TU7000", "osVersion": "5.5", "chromium": 69, "screen": "1920x1080"},
         "timing": {"startMs": 1800},
         "apps": {"listed": True, "count": 40, "known": {"youtube": True, "netflix": True, "prime": False}},
         "services": {"watcher": "answers", "watcherMs": 2100, "pages": "silent"},

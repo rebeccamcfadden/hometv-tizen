@@ -42,7 +42,7 @@ def _leaf(value, rule):
         return value if isinstance(value, str) and value in rest.split("|") else None
     if kind == "re":
         pattern = PATTERNS.get(rest)
-        return value if pattern and isinstance(value, str) and pattern.search(value) else None
+        return value if pattern and isinstance(value, str) and pattern.fullmatch(value) else None
     return None
 
 
@@ -97,7 +97,7 @@ def render_text(report):
         "",
         "THE TV",
         f"  Model: {lt.get('modelName') or t.get('model') or '?'}  ({lt.get('model', '?')}, year {lt.get('year', '?')})",
-        f"  Tizen: {t.get('tizen') or lt.get('platformVersion') or '?'}   Web engine: Chromium {t.get('chromium', '?')}"
+        f"  Tizen: {t.get('osVersion') or lt.get('platformVersion') or '?'}   Web engine: Chromium {t.get('chromium', '?')}"
         f"   Screen: {t.get('screen', '?')}",
         f"  Developer Mode: {lap.get('developerMode', '?')}, Host PC IP: {lap.get('hostPcIp', '?')}, "
         f"connection: {lap.get('sdb', '?')}",

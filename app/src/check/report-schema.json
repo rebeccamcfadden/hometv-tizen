@@ -1,8 +1,8 @@
 {
   "about": "Every field the check report may hold, and nothing else. The TV's check page (app/src/check/report.ts) and the laptop tool (tools/check/check_report.py) both drop anything that isn't listed here or doesn't match its rule. Rules: bool; int:<min>:<max>; enum:<a>|<b>; re:<pattern name>.",
   "patterns": {
-    "version": "^[0-9]{1,4}(\\.[0-9]{1,6}){0,3}$",
-    "model": "^[A-Za-z0-9][A-Za-z0-9_.+-]{0,39}$",
+    "version": "^[0-9]{1,4}(\\.[0-9]{1,6}){0,2}$",
+    "model": "^(?![0-9]{1,3}(\\.[0-9]{1,3}){3}$)(?![0-9A-Fa-f]{12}$)[A-Za-z0-9][A-Za-z0-9_.+-]{0,39}$",
     "screen": "^[0-9]{3,4}x[0-9]{3,4}$",
     "word": "^[A-Za-z0-9_-]{1,24}$",
     "errname": "^[A-Za-z]{1,40}$",
@@ -28,7 +28,7 @@
     "checkApp": "re:version",
     "finished": "bool",
     "step": "enum:auto|keys|phone|youtube|home|links|done",
-    "tv": { "model": "re:model", "tizen": "re:version", "chromium": "int:0:999", "screen": "re:screen" },
+    "tv": { "model": "re:model", "osVersion": "re:version", "chromium": "int:0:999", "screen": "re:screen" },
     "timing": { "startMs": "int:0:600000" },
     "apps": {
       "listed": "bool",

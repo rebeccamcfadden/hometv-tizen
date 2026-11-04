@@ -105,7 +105,7 @@ async function runAuto() {
   const info = await bridge.check('info');
   const d = (info.detail || {}) as Record<string, unknown>;
   put(progress, 'tv.model', d.model);
-  put(progress, 'tv.tizen', d.osVersion);
+  put(progress, 'tv.osVersion', d.osVersion);
   put(progress, 'tv.chromium', d.chromium);
   put(progress, 'tv.screen', `${window.screen.width}x${window.screen.height}`);
   status.textContent = 'Looking at which apps are on the TV…';
@@ -415,7 +415,7 @@ function runDone() {
 export function summaryLines(r: Record<string, any>): string[] {
   const out: string[] = [];
   const tv = r.tv || {};
-  out.push(`TV: ${tv.model || '?'} · Tizen ${tv.tizen || '?'} · Chromium ${tv.chromium || '?'}`);
+  out.push(`TV: ${tv.model || '?'} · ${bridge.platform.os} ${tv.osVersion || '?'} · Chromium ${tv.chromium || '?'}`);
   const apps = r.apps || {};
   const known = Object.keys(apps.known || {}).filter((k) => apps.known[k]);
   out.push(apps.listed ? `Apps: ${apps.count} · ${known.map((k) => KNOWN_APP_NAMES[k]).join(', ') || 'none of the known ones'}` : 'Apps: the TV didn’t list them');
