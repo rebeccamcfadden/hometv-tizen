@@ -2,6 +2,8 @@
 // page has none. With no service (a plain browser preview), a stand-in answers so the page still works, and says
 // so on screen.
 
+import { APP_IDS } from './apps';
+
 export const SERVICE = 'http://127.0.0.1:8766';
 
 export type Mode = 'tv' | 'fake-tv' | 'preview';
@@ -52,24 +54,109 @@ function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, timeou
 
 let mode: Mode = 'preview';
 let ping: Ping | null = null;
+let problem = '';
 const previewLog: Result[] = [];
+
+interface TizenLike {
+  ApplicationControl: new (operation: string) => unknown;
+  application: {
+    getCurrentApplication(): { appInfo: { packageId: string } };
+    launchAppControl(c: unknown, id: string, ok: () => void, err: (e: { message: string }) => void): void;
+  };
+}
+
+/** Running as its own app (not under TizenBrew), the page has `tizen` and can start the service itself. */
+function startServiceHere(): Promise<string> {
+  const tz = (window as unknown as { tizen?: TizenLike }).tizen;
+  if (!tz || !tz.application) return Promise.resolve('no tizen in the page');
+  return new Promise((resolve) => {
+    try {
+      const pkg = tz.application.getCurrentApplication().appInfo.packageId;
+      tz.application.launchAppControl(
+        new tz.ApplicationControl('http://tizen.org/appcontrol/operation/service'),
+        pkg + '.HomeTVService',
+        () => resolve('service start requested'),
+        (e) => resolve('service start refused: ' + e.message),
+      );
+    } catch (e) {
+      resolve('service start threw: ' + (e as Error).message);
+    }
+  });
+}
+
+/** Emulator wrapper only: tizen/service-host.js answers on 8767 with why the service didn't start. */
+function serviceProblem(): Promise<string> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', 'http://127.0.0.1:8767/');
+    xhr.timeout = 1500;
+    xhr.onload = () => resolve('host says: ' + xhr.responseText.slice(0, 300));
+    xhr.onerror = () => resolve('host silent');
+    xhr.ontimeout = () => resolve('host silent');
+    xhr.send();
+  });
+}
+
+/** Whether the TV lists the service as running. */
+function serviceRunning(): Promise<string> {
+  const tz = (window as unknown as { tizen?: { application: { getAppsContext(ok: (l: { appId: string }[]) => void, err: (e: { message: string }) => void): void } } }).tizen;
+  if (!tz) return Promise.resolve('');
+  return new Promise((resolve) => {
+    try {
+      tz.application.getAppsContext(
+        (list) => resolve(list.some((c) => /HomeTVService$/.test(c.appId)) ? 'service running' : 'service not running'),
+        (e) => resolve('contexts: ' + e.message),
+      );
+    } catch (e) {
+      resolve('contexts threw: ' + (e as Error).message);
+    }
+  });
+}
+
+/** Opens an app with the page's own `tizen` (HomeTV as its own app), trying each id. */
+async function launchHere(app: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
+  const tz = (window as unknown as { tizen?: { application: { launch(id: string, ok: () => void, err: (e: { name: string; message: string }) => void): void } } }).tizen;
+  if (!tz || !tz.application) return { ok: true, id: null, error: 'preview: nothing to open' };
+  let error = 'unknown app';
+  for (const id of APP_IDS[app] || []) {
+    error = await new Promise<string>((resolve) => {
+      try {
+        tz.application.launch(id, () => resolve(''), (e) => resolve(`${e.name}: ${e.message}`));
+      } catch (e) {
+        resolve((e as Error).message);
+      }
+    });
+    if (!error) return { ok: true, id };
+  }
+  return { ok: false, id: null, error };
+}
 
 export const bridge = {
   mode: () => mode,
+  /** Why the service wasn't found, for the screen (empty when it was). */
+  problem: () => problem,
   addresses: () => (ping && ping.addresses) || [],
 
   /** Finds the service; retries briefly, since TizenBrew may start it just after the page. */
   async connect(tries = 4): Promise<Mode> {
-    for (let i = 0; i < tries; i++) {
+    let lastError = '';
+    let started = '';
+    for (let i = 0; i < tries + 4; i++) {
       try {
         ping = await request<Ping>('GET', '/ping', undefined, 1500);
         mode = ping.fake ? 'fake-tv' : ping.tizen ? 'tv' : 'preview';
+        problem = '';
         return mode;
       } catch (e) {
-        await new Promise((r) => setTimeout(r, 400));
+        lastError = (e as Error).message;
+        if (i === tries - 1 && !started) started = await startServiceHere();
+        if (i >= tries && started.indexOf('requested') < 0) break;
+        await new Promise((r) => setTimeout(r, 600));
       }
     }
     mode = 'preview';
+    problem = `${lastError}${started ? '; ' + started : ''}`;
+    if (started) problem += '; ' + (await serviceRunning()) + '; ' + (await serviceProblem());
     return mode;
   },
 
@@ -83,9 +170,9 @@ export const bridge = {
     }
   },
 
-  /** Opens an app; the answer says which id worked. */
+  /** Opens an app; the answer says which id worked. As its own app, the page opens it itself. */
   async launch(app: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
-    if (mode === 'preview') return { ok: true, id: null, error: 'preview: nothing to open' };
+    if (mode === 'preview') return launchHere(app);
     try {
       const r = await request<{ ok: boolean; id: string | null; tried: { error: string | null }[] }>('POST', '/launch', { app });
       const last = r.tried[r.tried.length - 1];

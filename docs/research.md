@@ -217,6 +217,23 @@ What helps, from least to most:
   can open, so Rebecca reads it out or copies it instead of describing it.
 - **Shared logic** with `design_preview/`: a plan in [shared-package.md](shared-package.md).
 
+## On Samsung's TV emulator (2026-11-04)
+
+Tizen 10 emulator, the spike as its own app (`tizen/`), signed with a Samsung certificate made with Rebecca's
+account:
+
+- **Works:** installs and opens; Home draws as designed on Samsung's web engine; the remote's keys reach the page
+  (D-pad moves focus, OK presses); the page's own `tizen` calls work: it starts its background service, lists running
+  apps, and `tizen.application.launch` runs (the emulator has no Netflix, so it answers "No matched application
+  found", which the page shows).
+- **Doesn't work on the emulator:** the background service is listed as running, but nothing answers on its local
+  port, not even a status server started as the service file loads. TizenBrew, AeroTizen and Skylight all rely on
+  exactly this on real TVs, so it's most likely the emulator; the first TV call checks it with TizenTube's service
+  (Part C2). HomeTV as its own app doesn't need the service to open apps.
+- Only Samsung-signed apps install; Tizen's own sample certificates are refused.
+- How to repeat: `npm run build`, `node tools/package-tizen.mjs --profile <Samsung profile>`, `tizen install`, then
+  `tools/emulator-shot.ps1` for a picture and `ecp-cli keycode` for remote keys (28 OK, 103/108/105/106 arrows).
+
 ## Open questions for the TV (in the checklist)
 
 1. The TV's model, year and Tizen version.

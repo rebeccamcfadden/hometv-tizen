@@ -20,8 +20,8 @@ Decisions and deferred work for HomeTV on Samsung. The research is in [docs/](do
    fork or upstream contributions; keep `LICENSE` and a credit in the README and About screen. Move the spike's
    page, service checks and fake TV over.
 3. **The shared package** with `design_preview/` ([plan](docs/shared-package.md)), once the lead agrees.
-4. **The emulator:** Samsung's TV emulator (Tizen 10) refuses apps not signed with a Samsung certificate, which needs
-   a Samsung account sign-in in a browser. Until then the page runs in a browser against the fake TV (`npm run dev`).
+4. **The emulator:** running with a Samsung certificate (Rebecca's sign-in, 18:52). Open: the service's local port is
+   silent there ([research.md › On Samsung's TV emulator](docs/research.md#on-samsungs-tv-emulator-2026-11-04)).
 
 ## Tizen-only items (Rebecca sets when)
 

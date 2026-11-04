@@ -88,6 +88,12 @@ document.addEventListener('keydown', (e) => {
 
 let toastTimer = 0;
 function toast(text: string, bad = false) {
+  let last = stage.querySelector('.lastaction') as HTMLElement | null;
+  if (!last) {
+    last = el('div', 'lastaction');
+    stage.appendChild(last);
+  }
+  last.textContent = 'Last: ' + text;
   let t = stage.querySelector('.toast') as HTMLElement | null;
   if (!t) {
     t = el('div', 'toast');
@@ -112,6 +118,7 @@ function topBar(title: string): HTMLElement {
   bar.appendChild(el('div', 'brand', title));
   const right = el('div', 'topright');
   right.appendChild(el('span', 'pill ' + bridge.mode(), MODE_TEXT[bridge.mode()]));
+  if (bridge.problem()) bar.appendChild(el('div', 'problem', 'Service: ' + bridge.problem()));
   const clock = el('span', 'clock');
   const tick = () => {
     const d = new Date();
@@ -145,8 +152,8 @@ function showHome(installed: AppInfo[] | null) {
       if (missing) return toast(`${app.name} isn’t on this TV. Samsung’s Apps can add it.`, true);
       toast(`Opening ${app.name}…`);
       const r = await bridge.launch(app.key);
-      if (bridge.mode() === 'preview') toast(`Preview: on the TV this opens ${app.name}.`);
-      else if (r.ok) toast(`Opened ${app.name}${r.id ? ` (id ${r.id})` : ''}.`);
+      if (r.ok && r.id) toast(`Opened ${app.name} (id ${r.id}).`);
+      else if (r.ok) toast(`Preview: on the TV this opens ${app.name}.`);
       else toast(`${app.name} didn’t open: ${r.error}`, true);
     });
     row.appendChild(tile);
