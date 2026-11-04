@@ -17,8 +17,10 @@ only the real TV can answer is in [tv-call-checklist.md](tv-call-checklist.md).
   on the home network; TizenTube's does exactly that. To be checked once on the TV.
 - **The cost on the family's TV:** Developer Mode stays on for good (with "Host PC IP" set to the TV itself), and
   TizenBrew is installed once from a PC. No root, nothing flashed, and all of it can be undone from the TV's menus.
-- **The biggest risks:** it needs the internet to open at all; Developer Mode may switch itself off after a Samsung
-  update; and on 2023 and newer TVs a certificate tied to that TV, whose lifetime we don't know yet.
+- **The biggest risks:** as a TizenBrew module it needs the internet to open at all (HomeTV as its own app, installed
+  the same way as TizenBrew, fixes that: see [Working without the internet](#working-without-the-internet));
+  Developer Mode may switch itself off after a Samsung update; and on 2023 and newer TVs a certificate tied to that
+  TV, whose lifetime we don't know yet.
 
 ## 1. Can a module open Netflix and the rest?
 
@@ -150,16 +152,57 @@ How sure: high (TizenBrew's guide and source), except where marked.
 - Publishing needs an npm account and a package name: a question for Rebecca later (it's public: anything on npm is
   readable by anyone, whatever the GitHub repo's visibility).
 
+## Working without the internet
+
+The fork's rule is that Home works offline. As a TizenBrew module it can't, and the module can't fix that by itself:
+
+- When TizenBrew's background service starts, it asks jsDelivr for each module's `package.json`. Offline, the module
+  comes back as "Unknown Module" with no page to open, so it can't be chosen or auto-launched (`moduleLoader.js`).
+- Its page is fetched through TizenBrew's proxy on every open (`index.js`, `/module/...`), with no copy on the TV.
+
+What helps, from least to most:
+
+1. **A cached copy inside TizenBrew (partial).** The page can keep itself with a service worker: its address,
+   `127.0.0.1`, counts as secure, and Chromium 56 has service workers. That brings HomeTV back offline only while
+   TizenBrew's service is still running from an earlier, online start (it keeps its module list in memory). After a
+   full restart with no internet it still can't open. Whether service workers work inside TizenBrew at all is a TV
+   question. Cheap to add; doesn't solve it.
+2. **HomeTV as its own app, installed by TizenBrew Installer (full).** The same installer that puts TizenBrew on the
+   TV installs any app from a GitHub repository's latest release (`.wgt`), and on 2023+ TVs signs it with the same
+   per-TV certificate it made for TizenBrew (TizenBrewInstaller `index.js`: `fetchLatestRelease`, `resignOrInstall`).
+   So it costs the household nothing more than TizenBrew does: Developer Mode, the laptop once. Then:
+   - **It opens offline:** its page is inside the app. When online it can fetch a newer page, keep it on the TV and
+     use it next time, falling back to the copy inside the app. That's the "cached module".
+   - **It doesn't need TizenBrew at all,** or its restart-in-debug-mode trick, or Host PC IP `127.0.0.1`.
+   - **It keeps the TV's own functions in the page:** apps open directly, no background service needed for that.
+     Its own web address, so keys in its storage are its own.
+   - **Its own tile** in Samsung's app row, and Autorun Last App reopens it directly.
+   - **The costs:** a new version of the app itself (not of its page) means the laptop again; the GitHub repo (or
+     another public place for the release) must be public for the installer to fetch it; and on 2023+ TVs the
+     certificate's lifetime is the same open question as TizenBrew's.
+
+   This is close to what `docs/rework.md` ruled out ("an own `.wgt` through Tizen Studio"), but the reason it was
+   ruled out (Tizen Studio and a certificate per TV) is handled by TizenBrew Installer here, as it is for TizenBrew.
+   The three Samsung home screens in upstream's SHOWCASE (Skylight, Clean TV Home, Blocky Cabin) are all their own
+   apps like this. The spike's `tizen/` folder is already that app, for the emulator.
+3. **Recommendation:** decide after the first TV call (it shows whether TizenBrew Installer works on their TV and
+   what the certificate looks like). If it does, make HomeTV its own app with the cached page, and keep the
+   TizenBrew module as a fallback for TVs where that fails. A question for Rebecca is in `work\feedback.md`.
+
 ## Risks, in order
 
-1. **No internet, no HomeTV.** TizenBrew fetches the module each time it opens. Offline, it can't open; Smart Hub
-   and the apps on the TV still work. This breaks the fork's "local content works offline" rule for Samsung, and
-   can't be fixed inside the module (TizenBrew does the fetching). Saying so plainly to the family is the mitigation.
+1. **No internet, no HomeTV** (as a TizenBrew module). TizenBrew fetches the module each time it opens. Offline, it
+   can't open; Smart Hub and the apps on the TV still work. See [Working without the internet](#working-without-the-internet)
+   for the way around it.
 2. **Developer Mode switched off** by an update or a reset: HomeTV stops opening until it's switched on again.
 3. **The certificate on 2023+ TVs** may expire; renewing means the PC again.
 4. **TizenBrew is one person's project.** If it stops being maintained, a newer Samsung firmware may break it.
 5. **Shared space:** other TizenBrew modules can see the module page's storage; keys stay in the service's file.
 6. **Opening titles** probably doesn't work, so "Watch on" opens the app's home screen.
+7. **Developer Mode is a way in:** a February 2026 report (Bishop Fox, SVE-2025-50109, not yet fixed then) showed
+   that whatever can reach Developer Mode's connection can run its own code on the TV. With Host PC IP set to
+   `127.0.0.1` (as TizenBrew needs anyway) only the TV itself can; never leave it pointing at a laptop. See
+   [jailbreak.md](jailbreak.md).
 
 ## Plan for the module
 

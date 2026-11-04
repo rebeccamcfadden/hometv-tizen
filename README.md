@@ -8,6 +8,8 @@ HomeTV's launcher, for Samsung TVs. Samsung TVs run Tizen, not Android, so the
 **Status: a spike.** It answers whether this can work before anything is built for real. What we know so far:
 [docs/research.md](docs/research.md). The first call with a real TV: [docs/tv-call-checklist.md](docs/tv-call-checklist.md).
 Sharing logic with the Android launcher's prototype: [docs/shared-package.md](docs/shared-package.md).
+Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off), [docs/launcher-replacement.md](docs/launcher-replacement.md)
+(how far a home screen can replace Samsung's), [docs/jailbreak.md](docs/jailbreak.md) (the options, safest first).
 
 ## What's here
 
