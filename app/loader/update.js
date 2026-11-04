@@ -53,16 +53,16 @@
     return decodeURIComponent(escape(bin));
   }
 
-  /** True when one of the app's keys signed these exact bytes. */
+  /** The app key (base64) that signed these exact bytes, or null. */
   function signedBy(nacl, bytes, sigText, keys) {
     var sig;
     try {
       sig = base64ToBytes(sigText);
     } catch (e) {
-      return false;
+      return null;
     }
     if (sig.length !== 64) {
-      return false;
+      return null;
     }
     for (var i = 0; i < keys.length; i++) {
       var pk;
@@ -72,10 +72,10 @@
         continue;
       }
       if (pk.length === 32 && nacl.sign.detached.verify(toBytes(bytes), sig, pk)) {
-        return true;
+        return keys[i];
       }
     }
-    return false;
+    return null;
   }
 
   function isArray(x) {
@@ -160,13 +160,14 @@
     return null;
   }
 
-  /** Checks the manifest's bytes and signature; returns { manifest } or { refused: reason }. */
+  /** Checks the manifest's bytes and signature; returns { manifest, key } or { refused: reason }. */
   function check(nacl, bytes, sigText, ctx) {
     bytes = toBytes(bytes);
     if (bytes.length > MAX_MANIFEST) {
       return { refused: "manifest too large" };
     }
-    if (!signedBy(nacl, bytes, sigText, ctx.keys)) {
+    var key = signedBy(nacl, bytes, sigText, ctx.keys);
+    if (!key) {
       return { refused: "bad signature" };
     }
     var m;
@@ -176,7 +177,7 @@
       return { refused: "manifest is not JSON" };
     }
     var why = validate(m, ctx);
-    return why ? { refused: why } : { manifest: m };
+    return why ? { refused: why } : { manifest: m, key: key };
   }
 
   function get(url, binary, cb) {
@@ -251,6 +252,7 @@
     var url = splitUrl(shell.updateUrl);
     var sigUrl = url.path + ".sig" + url.query;
     var folder = url.path.replace(/[^\/]*$/, "");
+    var signedWith = null;
 
     ensureNacl(api, function (err, nacl) {
       if (err) {
@@ -277,6 +279,7 @@
             // Same or older is the everyday answer, not a problem.
             return done(null, /not newer/.test(c.refused) ? "up to date" : "refused: " + c.refused);
           }
+          signedWith = c.key;
           download(c.manifest, nacl);
         });
       });
@@ -363,6 +366,8 @@
         minShell: m.minShell,
         entry: { css: m.entry.css.slice(0), js: m.entry.js.slice(0), body: m.entry.body },
         files: files,
+        // boot.js shows a page only while the installed app still trusts the key that signed it.
+        key: signedWith,
       };
       s.next = m.version;
       s.partial = null;

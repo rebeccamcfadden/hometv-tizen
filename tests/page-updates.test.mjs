@@ -469,6 +469,32 @@ for (const api of ['openFile', 'resolve']) {
     const app = await start(tv);
     assert.equal(app.win.shown, 'bundled');
   });
+
+  test(`${api}: after a reinstall that keeps the TV's data, the undo steps still hold`, async () => {
+    const { tv, srv } = makeTv(api);
+    srv.offer = release('1.1.0');
+    (await start(tv, 11000)).stop();
+    (await start(tv)).stop(); // 1.1.0 is good
+
+    // A new app trusting a new key only (the old one lost or leaked): pages signed with the old key aren't shown.
+    tv.shellConfig = shellConfig({ pubKeys: [otherKeys.publicKey] });
+    srv.online = false;
+    const newKey = await start(tv);
+    assert.equal(newKey.win.shown, 'bundled');
+    newKey.stop();
+
+    // Both keys trusted again: the page is fine to show.
+    tv.shellConfig = shellConfig({ pubKeys: [otherKeys.publicKey, keys.publicKey] });
+    const both = await start(tv);
+    assert.equal(both.win.shown, '1.1.0');
+    both.stop();
+
+    // A new app whose own page is as new as the downloaded one: the app's own page shows.
+    tv.shellConfig = shellConfig();
+    tv.shellConfig.page.version = '1.1.0';
+    const own = await start(tv);
+    assert.equal(own.win.shown, 'bundled');
+  });
 }
 
 test('a manifest query string is kept and the signature sits beside it', async () => {

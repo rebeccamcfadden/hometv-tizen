@@ -148,6 +148,7 @@
       p &&
       p.entry &&
       p.files &&
+      shell.keys.indexOf(p.key) >= 0 &&
       s.skip.indexOf(v) < 0 &&
       compareVersions(v, shell.pageVersion) === 1 &&
       compareVersions(p.minShell, shell.version) !== null &&

@@ -24,8 +24,8 @@ At every start, `boot.js` (plain ES5, no network) picks the newest good page the
 3. the one before it, else
 4. the page that came with the app.
 
-It only uses a downloaded page that is newer than the app's own, needs no newer app than this one, and hasn't
-failed. It reads that page's files from the app's private storage (`wgt-private/pages/<version>/`, through Tizen's
+It only uses a downloaded page that is newer than the app's own, was signed with a key this app trusts, needs no
+newer app than this one, and hasn't failed. It reads that page's files from the app's private storage (`wgt-private/pages/<version>/`, through Tizen's
 filesystem API: `openFile` on Tizen 5.0 and newer, the older `resolve` on Tizen 3 and 4) and puts them into the
 installed `index.html` as inline styles and scripts. Images load from the same folder (a `<base>` address). The app
 never goes to another web page, so it keeps `tizen`.
@@ -104,9 +104,18 @@ before, so raise `package.json`'s version too.
 - **It starts but is wrong:** release the previous code again **with a higher version number** (check out the
   older code, raise the version past the bad one, build, release). TVs never go back to a lower number.
 - **Everything off:** take `manifest.json` off the server. TVs keep the page they have and stop changing.
-- **Back to the app's own page on one TV:** reinstall the app with a page version higher than the downloaded one.
+- **Back to the app's own page on one TV:** reinstall the app with its own page's version (`package.json`) at least
+  as high as the downloaded one. This works whether or not reinstalling deletes the downloaded pages: a TV never shows
+  a downloaded page that isn't newer than the app's own. If the server still offers a newer page, the TV downloads it
+  again, so take that one off the server first (or release the fix above).
 - **A lost or leaked key:** make a new pair, put the new public key in `tizen/page-keys.txt` (remove the old one),
-  and reinstall the app with the laptop. TVs only trust the keys their app was built with.
+  and reinstall the app with the laptop. TVs only trust the keys their app was built with, and each downloaded page
+  remembers the key that signed it, so pages signed with the old key are no longer shown even if the reinstall keeps
+  them. Then release the page again with the new key, at a higher version.
+
+Whether reinstalling or uninstalling the app keeps its private storage (the downloaded pages and their records)
+isn't checked yet. The steps above don't depend on it. An uninstall and a fresh install start with the app's own
+page in any case if the storage goes; if it stays, the rules above still pick which page shows.
 
 ## Trying it on a PC
 
