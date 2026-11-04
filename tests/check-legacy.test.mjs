@@ -50,6 +50,8 @@ for (const [what, patch, expect] of [
   ['flexbox gap', { 'dist/assets/style.css': '.a { display: flex; gap: 8px; }' }, /gap/],
   ['CSS grid', { 'dist/assets/style.css': '.a { display: grid; }' }, /grid/],
   [':focus-visible', { 'dist/assets/style.css': '.a:focus-visible { color: red; }' }, /focus-visible/],
+  ['matchAll in the page', { 'dist/assets/app.js': 'var a = "x".matchAll(/x/g);' }, /matchAll/],
+  ['replaceChildren in the page', { 'dist/assets/app.js': 'document.body.replaceChildren();' }, /replaceChildren/],
 ]) {
   test(`refuses ${what}`, () => {
     const [code, out] = runOn({ ...ok, ...patch });

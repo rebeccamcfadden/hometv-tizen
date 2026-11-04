@@ -40,12 +40,35 @@ const CSS_RULES = [
   [/(^|[;{\s])inset\s*:/, 'inset (Chromium 87)'],
 ];
 
+/**
+ * Built-ins newer than Chromium 56 that a bundler doesn't lower (syntax it does lower). Method names survive
+ * minifying, so the built page is scanned. AeroTizen's ES5 scripts in dist/aero are its own and skipped.
+ */
+const JS_BUILTINS = [
+  [/\.matchAll\(/, 'String.prototype.matchAll (Chromium 73)'],
+  [/\.padStart\(|\.padEnd\(/, 'padStart/padEnd (Chromium 57)'],
+  [/Object\.fromEntries\(/, 'Object.fromEntries (Chromium 73)'],
+  [/\.flatMap\(|\.flat\(\)/, 'Array.prototype.flat/flatMap (Chromium 69)'],
+  [/\.replaceAll\(/, 'String.prototype.replaceAll (Chromium 85)'],
+  [/\.replaceChildren\(/, 'replaceChildren (Chromium 86)'],
+  [/structuredClone\(/, 'structuredClone (Chromium 98)'],
+  [/\.trimStart\(|\.trimEnd\(/, 'trimStart/trimEnd (Chromium 66)'],
+  [/Object\.hasOwn\(/, 'Object.hasOwn (Chromium 93)'],
+  [/\bglobalThis\b/, 'globalThis (Chromium 71)'],
+  [/new AbortController\(/, 'AbortController (Chromium 66)'],
+];
+
 parseAs(path.join(root, 'service', 'service.js'), 5, 'script');
 if (fs.existsSync(path.join(root, 'tizen', 'service-host.js'))) parseAs(path.join(root, 'tizen', 'service-host.js'), 5, 'script');
 
 const dist = path.join(root, 'dist');
 if (!fs.existsSync(dist)) problems.push('dist/ is missing: run `npm run build` first');
-for (const file of walk(dist, '.js')) parseAs(file, 2017, 'script');
+for (const file of walk(dist, '.js')) {
+  parseAs(file, 2017, 'script');
+  if (file.includes(`${path.sep}aero${path.sep}`)) continue;
+  const js = fs.readFileSync(file, 'utf8');
+  for (const [re, what] of JS_BUILTINS) if (re.test(js)) problems.push(`${path.relative(root, file)}: uses ${what}`);
+}
 for (const file of walk(dist, '.html')) {
   const html = fs.readFileSync(file, 'utf8');
   if (/type=["']?module/.test(html)) problems.push(`${path.relative(root, file)}: <script type="module"> (Chromium 61)`);

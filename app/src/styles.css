@@ -124,11 +124,11 @@ button {
 .tile.has-art .mark {
   visibility: hidden;
 }
-.tile.focused {
+.tile.is-focused {
   transform: scale(1.08);
   box-shadow: 0 0 0 4px #b9d4ff;
 }
-.tile.focused .name {
+.tile.is-focused .name {
   opacity: 1;
 }
 
@@ -145,7 +145,7 @@ button {
   margin-right: 24px;
   text-align: left;
 }
-.button.focused {
+.button.is-focused {
   background: #b9d4ff;
   color: #0b0f1a;
   transform: scale(1.03);
@@ -211,11 +211,11 @@ button {
   opacity: 0;
   transition: opacity 320ms, transform 320ms;
 }
-.toast.show {
+.toast.is-shown {
   opacity: 1;
   transform: translate(-50%, 0);
 }
-.toast.bad {
+.toast.is-bad {
   background: #5a2a2a;
 }
 /* The last message, kept small at the top left so a screenshot taken later still shows what happened. */
