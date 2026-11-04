@@ -210,6 +210,7 @@ const CHECKS: CheckDef[] = [
 
 function summary(r: Result): string {
   const d = r.detail as Record<string, unknown>;
+  if (r.check === 'info' && d && d.mode === 'own app') return `${d.model || '?'} · Tizen ${d.tizen || '?'} · Chromium ${d.chromium || '?'}`;
   if (r.check === 'info' && d) return `${d.model || '?'} · Tizen ${d.tizen || '?'} · Node ${d.node} · up ${d.serviceUpMinutes} min`;
   if (r.check === 'apps' && d) return r.ok ? `${d.count} apps listed; known: ${Object.keys((d.known as object) || {}).join(', ') || 'none'}` : `not listed: ${d.error}`;
   if (r.check === 'phone' && d) return r.ok ? `yes, ${d.visits} visit(s)` : 'not yet: open the link on the phone first';
@@ -226,7 +227,9 @@ function showChecks() {
 
   const addr = bridge.addresses();
   const link = addr.length ? `http://${addr[0]}:8766/report` : 'http://<the TV’s address>:8766/report';
-  root.appendChild(el('p', 'phonelink', `On a phone on the same Wi-Fi, open ${link}`));
+  root.appendChild(
+    el('p', 'phonelink', bridge.mode() === 'app' ? 'Results stay on this TV; read them out or take a photo.' : `On a phone on the same Wi-Fi, open ${link}`),
+  );
 
   const cols = el('div', 'cols');
   const list = el('div', 'checklist');
@@ -254,8 +257,13 @@ function showChecks() {
   for (const c of CHECKS) {
     const b = el('button', 'button wide', c.label + (c.leaves ? '  ↗' : ''));
     b.addEventListener('click', async () => {
-      if (c.leaves) toast('This may open another app. Come back to HomeTV afterwards (open TizenBrew again).');
-      else toast('Checking…');
+      if (c.leaves) {
+        toast(
+          bridge.mode() === 'app'
+            ? 'This opens another app. HomeTV comes back when it closes (or open HomeTV from Apps).'
+            : 'This may open another app. Come back to HomeTV afterwards (open TizenBrew again).',
+        );
+      } else toast('Checking…');
       const r = await bridge.check(c.name, c.params);
       toast(`${r.ok ? 'Done' : 'Didn’t work'}: ${summary(r)}`, !r.ok);
       renderLog();

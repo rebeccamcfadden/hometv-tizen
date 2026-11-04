@@ -7,6 +7,7 @@
 // - **preview**: neither; the page still works and says so.
 
 import { HOME_APPS } from './apps';
+import { pageChecks } from './pageChecks';
 
 export const SERVICE = 'http://127.0.0.1:8766';
 
@@ -175,8 +176,9 @@ export const bridge = {
   },
 
   async check(name: string, params: Record<string, unknown> = {}): Promise<Result> {
-    if (mode === 'preview' || mode === 'app') {
-      const r = { at: new Date().toISOString(), check: name, ok: false, detail: { error: 'checks run under TizenBrew only' } };
+    if (mode === 'app') return pageChecks.run(name, params, (key) => (installedFor(key) || { id: null }).id);
+    if (mode === 'preview') {
+      const r = { at: new Date().toISOString(), check: name, ok: false, detail: { error: 'preview: no TV' } };
       previewLog.push(r);
       return r;
     }
@@ -188,7 +190,8 @@ export const bridge = {
   },
 
   async results(): Promise<Result[]> {
-    if (mode === 'preview' || mode === 'app') return previewLog.slice();
+    if (mode === 'app') return pageChecks.results();
+    if (mode === 'preview') return previewLog.slice();
     try {
       return await request<Result[]>('GET', '/results');
     } catch (e) {
