@@ -202,8 +202,11 @@ function installedApps(cb) {
 var STORE_PACKAGE = /^[A-Za-z0-9]{10}$/;
 /** Never shown in All apps, nor opened from it: services, the manual, widgets, HomeTV's own parts. */
 var HIDDEN_APPS = /service|emanual|companion|dummy|widget|DclHome001|HmTvSpike0/i;
+/** Streaming apps a Samsung comes with, under firmware-style ids (AeroTizen's app-catalog.js, "preloaded"). */
+var PRELOADED_IDS = ['org.tizen.netflix-app', 'org.tizen.primevideo', 'com.samsung.tv.aria-video'];
 
 function isKnownId(id) {
+  if (PRELOADED_IDS.indexOf(id) >= 0) return true;
   for (var key in APPS) if (APPS[key].ids.indexOf(id) >= 0) return true;
   return false;
 }
@@ -770,4 +773,4 @@ server.on('error', function (e) {
 loadResults();
 server.listen(PORT, '0.0.0.0');
 
-module.exports = { server: server, APPS: APPS, CHECKS: CHECKS, parseFrame: parseFrame, textFrame: textFrame };
+module.exports = { server: server, APPS: APPS, CHECKS: CHECKS, parseFrame: parseFrame, textFrame: textFrame, realApps: realApps };

@@ -63,6 +63,19 @@ test('apps/all lists the apps a person would open, by name, without the firmware
   assert.equal(r.apps.filter((a) => a.name === 'Netflix')[0].id, '11101200001');
 });
 
+test('apps/all keeps the streaming apps a Samsung comes with under firmware-style ids', () => {
+  const apps = dev.service.realApps([
+    { id: 'org.tizen.netflix-app', packageId: 'org.tizen.netflix-app', name: 'Netflix' },
+    { id: 'org.tizen.primevideo', packageId: 'org.tizen.primevideo', name: 'Prime Video' },
+    { id: 'com.samsung.tv.aria-video', packageId: 'com.samsung.tv.aria-video', name: 'Apple TV' },
+    { id: '9Ur5IzDKqV.TizenYouTube', packageId: '9Ur5IzDKqV', name: 'YouTube' },
+    { id: 'org.tizen.browser', packageId: 'org.tizen.browser', name: 'Internet' },
+    { id: 'AbCdEfGhIj.Hidden', packageId: 'AbCdEfGhIj', name: 'Hidden', show: false },
+  ]);
+  // The service runs in its own VM context: compare as plain JSON.
+  assert.deepEqual(JSON.parse(JSON.stringify(apps.map((a) => a.name))), ['Apple TV', 'Netflix', 'Prime Video', 'YouTube']);
+});
+
 test('launch by id opens an app All apps lists, and nothing else', async () => {
   const r = await post('/launch', { id: 'FakeTwtch1.Twitch' });
   assert.equal(r.ok, true);
