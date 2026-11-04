@@ -392,7 +392,16 @@ export function titlePage(t: Title, opts: { moreLike?: boolean } = {}): Screen {
   const el = h('div.screen.layer-popup', h('div.scrim'), popup);
   const first = opts.moreLike ? '[data-key="tab-More like this"]' : '[data-key="watch"]';
   const screen: Screen = { label: t.name, el, layer: 'popup', defaultFocus: () => popup.querySelector(first) as HTMLElement | null };
-  // My list, Seen and Favorite changed elsewhere (another title page, later a phone): the buttons follow.
-  const stop = store.on(() => (shell.has(screen) ? togglePaints.forEach((p) => p()) : stop()));
+  // My list, Seen and Favorite changed elsewhere (another title page, later a phone): the buttons follow. Both
+  // listeners go when the page leaves the stack, so a closed page can be freed.
+  const stopStore = store.on(() => togglePaints.forEach((p) => p()));
+  let wasShown = false;
+  const stopStack = shell.onChange(() => {
+    if (shell.has(screen)) wasShown = true;
+    else if (wasShown) {
+      stopStore();
+      stopStack();
+    }
+  });
   return screen;
 }

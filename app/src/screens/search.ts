@@ -110,7 +110,8 @@ export function searchScreen(): Screen {
   const cards: Record<string, HTMLElement> = {};
 
   const resultCard = (hit: Hit, i: number) => {
-    const k = `r-${hit.kind}-${hit.label}`;
+    // Titles by id (two titles may share a name), people by name.
+    const k = hit.kind === 'person' ? `r-person-${hit.label}` : `r-title-${hit.title!.id}`;
     let card = cards[k];
     if (!card) {
       if (hit.kind === 'person') {

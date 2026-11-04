@@ -41,8 +41,12 @@ test('the filter chips keep movies, shows or people', () => {
 test('Included only keeps titles on the household’s services (one region: Sweden’s first ticks)', () => {
   const inc = labels(find('a', 'included').items);
   assert.ok(inc.includes('Arrival'), 'Prime Video is ticked');
-  assert.ok(!inc.includes('Moon'), 'Moon is rent only');
-  assert.ok(!inc.includes('The Arrival'), 'rent only, in a store with no price');
+  const moon = labels(find('moon', 'included').items);
+  assert.ok(labels(find('moon').items).includes('Moon'));
+  assert.ok(!moon.includes('Moon'), 'Moon is rent only');
+  assert.ok(moon.includes('Killers of the Flower Moon'), 'on Apple TV, ticked');
+  assert.ok(labels(find('the arrival').items).includes('The Arrival'));
+  assert.ok(!labels(find('the arrival', 'included').items).includes('The Arrival'), 'rent only, in a store with no price');
 });
 
 test('a genre typed in full lists its titles first, and counts as a match', () => {
@@ -52,6 +56,20 @@ test('a genre typed in full lists its titles first, and counts as a match', () =
   assert.ok(r.items.length > 5);
   assert.ok(r.items.every((x) => x.kind === 'title' && x.title.genres.includes('Sci-fi')));
   for (const g of m.BROWSE_GENRES) assert.equal(find(g.toLowerCase()).hasMatches, true, g);
+});
+
+test('a genre’s titles come before titles named like the query only when the query is the genre’s name', () => {
+  // A title matched by name and a genre that matched well, as one search could return them.
+  const named = m.runSearch('knives', false, new Set()).res.titles[0];
+  const genre = m.runSearch('sci-fi', false, new Set()).res.genres[0];
+  assert.equal(named.label, 'Knives Out');
+  const res = { titles: [named], people: [], genres: [genre], suggestions: [] };
+  const exact = m.resultItems(res, 'all', 'Sci-fi ');
+  assert.notEqual(exact[0].label, 'Knives Out');
+  assert.equal(exact[exact.length - 1].label, 'Knives Out');
+  const partial = m.resultItems(res, 'all', 'sci');
+  assert.equal(partial[0].label, 'Knives Out');
+  assert.equal(partial.length, exact.length);
 });
 
 test('titles named like the query come before a genre that matched less well', () => {
