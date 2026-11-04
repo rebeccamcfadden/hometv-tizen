@@ -34,6 +34,7 @@ export const AERO_SCRIPTS = [
 const AERO_JS = path.resolve(__dirname, 'vendor/aerotizen/launcher/js');
 const GLUE = path.resolve(__dirname, 'app/aero-glue.js');
 const V1 = process.env.HOMETV_V1 === '1';
+const VERSION = (JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')) as { version: string }).version;
 
 const aeroScripts = (): Plugin => ({
   name: 'aero-scripts',
@@ -73,7 +74,7 @@ export default defineConfig({
       '@v1': path.resolve(__dirname, V1 ? 'app/src/v1.ts' : 'app/src/v1-off.ts'),
     },
   },
-  define: { __HOMETV_V1__: JSON.stringify(V1) },
+  define: { __HOMETV_V1__: JSON.stringify(V1), __HOMETV_VERSION__: JSON.stringify(VERSION) },
   server: { port: 5180, strictPort: true },
   build: {
     outDir: '../dist',
