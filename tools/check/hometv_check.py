@@ -239,10 +239,14 @@ def tv_facts(device, caps):
     }
 
 
-def app_ids(applist_text):
+def app_ids(applist_text, store_ids=False):
+    """The TV's app ids; with store_ids, Samsung's store ids too (newer TVs list both: 111299001912 is YouTube's)."""
     from aerotizen import catalog
 
-    return [a["appid"] for a in catalog.parse_applist(applist_text)]
+    apps = catalog.parse_applist(applist_text)
+    if not store_ids:
+        return [a["appid"] for a in apps]
+    return [x for a in apps for x in (a["appid"], a.get("store_id")) if x]
 
 
 # ---------------------------------------------------------------- the check
@@ -412,7 +416,7 @@ class Check:
                 with self.tv.session() as s:
                     caps = s.capability()
                     self.duid = s.duid()
-                    ids = app_ids(s.applist())
+                    applist = s.applist()
                 break
             except (SdbError, OSError) as e:
                 self.laptop["sdb"] = "refused"
@@ -427,7 +431,8 @@ class Check:
                 return False
         self.laptop["sdb"] = "connected"
         self.laptop["tv"] = tv_facts(self.tv.info(), caps)
-        known = check_report.known_from_app_ids(ids)
+        ids = app_ids(applist)
+        known = check_report.known_from_app_ids(app_ids(applist, store_ids=True))
         self.laptop["apps"] = {"count": len(ids), "known": known}
         t = check_report.clean(self.laptop["tv"], check_report.SCHEMA["laptop"]["tv"]) or {}
         p.say(f"TV: {t.get('modelName', 'Samsung')}, Tizen {t.get('platformVersion', '?')}. {len(ids)} apps on it.")
@@ -500,6 +505,9 @@ class Check:
                 self.laptop["install"] = "ok"
                 self.laptop["start"] = "ok"
                 return True
+            # From here the app may be on the TV, even if the install reports a failure or is interrupted: the
+            # clean-up always tries to remove it (removing an app that isn't there does no harm).
+            self.installed = True
             try:
                 with self.tv.session(timeout=60) as s:
                     self._install(s, signed)
@@ -507,7 +515,6 @@ class Check:
                 self.laptop["install"] = "failed"
                 p.say(f"Installing failed: {e}")
                 return False
-        self.installed = True
         self.laptop["install"] = "ok"
         p.say("Installed: 'HomeTV Check' is on the TV.")
         return self.start_app()
@@ -725,45 +732,31 @@ STEP_NAMES = {
 
 
 def read_through_inspector(tv, local_port):
-    """Way 2 (docs/check-tool.md): restart the check app with its web inspector (AeroTizen's `inspect`) and ask the page for its
-    report (Chrome DevTools: Runtime.evaluate of HomeTVCheck.report()). The results survive the restart: the page
-    keeps them in its own storage."""
-    from aerotizen import inspect_app
+    """Way 2 (docs/check-tool.md): restart the check app with its web inspector (AeroTizen's `inspect`) and ask the
+    page for its report (Chrome DevTools: Runtime.evaluate of HomeTVCheck.report()). The results survive the restart:
+    the page keeps them in its own storage.
+
+    AeroTizen's forwarder blocks for good while it holds the TV's one Developer Mode connection, so it runs in a child
+    process (this file, --inspector-child) that is ended afterwards: that frees the connection, its lock and the port."""
+    import queue
+    import subprocess
+
     from aerotizen.cdp import Page
 
-    holder = {}
-
-    def forward():
-        try:
-            session = tv.session(timeout=60)
-            holder["session"] = session
-            port = None
-            for attempt in range(4):
-                inspect_app.stop(tv.host, APP_ID)
-                try:
-                    port = session.debug_launch(APP_ID)
-                    break
-                except Exception:
-                    time.sleep(0.5)
-            if port is None:
-                holder["error"] = "no inspector port"
-                return
-            holder["ready"] = True
-            session.forward(local_port, port)
-        except Exception as e:  # the socket closes when we're done
-            holder.setdefault("error", str(e))
-
-    old_hook = threading.excepthook
-    threading.excepthook = lambda args: None  # the forwarder's reader thread ends with an error when closed
-    thread = threading.Thread(target=forward, daemon=True)
-    thread.start()
+    cmd = [sys.executable, str(Path(__file__).resolve()), "--inspector-child", "--host", tv.host,
+           "--sdb-port", str(tv.sdb_port), "--inspector-port", str(local_port)]
+    child = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    lines = queue.Queue()
+    threading.Thread(target=lambda: [lines.put(line) for line in child.stdout], daemon=True).start()
     try:
-        deadline = time.monotonic() + 40
-        while time.monotonic() < deadline and not holder.get("ready") and "error" not in holder:
-            time.sleep(0.5)
-        if not holder.get("ready"):
+        deadline = time.monotonic() + 45
+        ready = False
+        while time.monotonic() < deadline and not ready and child.poll() is None:
+            with contextlib.suppress(queue.Empty):
+                ready = lines.get(timeout=0.5).startswith("ready")
+        if not ready:
             return None
-        while time.monotonic() < deadline:
+        while time.monotonic() < deadline and child.poll() is None:
             try:
                 text = Page(local_port).eval("window.HomeTVCheck ? window.HomeTVCheck.report() : ''")
                 if text:
@@ -774,12 +767,31 @@ def read_through_inspector(tv, local_port):
             time.sleep(2)
         return None
     finally:
-        session = holder.get("session")
-        if session:
-            with contextlib.suppress(Exception):
-                session.close()
-        time.sleep(0.5)
-        threading.excepthook = old_hook
+        child.terminate()
+        with contextlib.suppress(Exception):
+            child.wait(10)
+
+
+def inspector_child(host, sdb_port, local_port):
+    """The child process of read_through_inspector: AeroTizen's `inspect` steps, with this tool's ports. Prints
+    'ready <port>' once the inspector is forwarded to localhost:<local_port>, then forwards until it is ended."""
+    from aerotizen import inspect_app
+
+    with Tv(host, sdb_port).session(timeout=60) as s:
+        port = None
+        for _ in range(4):
+            inspect_app.stop(host, APP_ID)
+            try:
+                port = s.debug_launch(APP_ID)
+                break
+            except Exception:
+                time.sleep(0.5)
+        if port is None:
+            print("failed", flush=True)
+            return 1
+        print(f"ready {port}", flush=True)
+        s.forward(local_port, port)
+    return 0
 
 
 def dry_tv_report():
@@ -843,7 +855,10 @@ def main(argv=None):
     parser.add_argument("--keep-app", action="store_true", help="leave the check app on the TV (testing only)")
     parser.add_argument("--no-open", action="store_true", help="don't open the certificate folder in Explorer")
     parser.add_argument("--no-pause", action="store_true", help="don't wait for Enter at the very end")
+    parser.add_argument("--inspector-child", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
+    if args.inspector_child:
+        sys.exit(inspector_child(args.host, args.sdb_port, args.inspector_port))
     Check(args).run()
 
 

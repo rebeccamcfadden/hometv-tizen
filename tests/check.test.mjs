@@ -170,6 +170,22 @@ test('the check tool’s dry run writes a clean report', (t) => {
   }
 });
 
+test('the laptop finds known apps by their store ids on newer TVs too', (t) => {
+  const python = findPython(['cryptography', 'websocket']);
+  if (!python) return t.skip('no Python with cryptography and websocket-client here (set HOMETV_PYTHON)');
+  // AeroTizen's block format (Tizen 6+): the Tizen id is the app id, the store id is beside it.
+  const script = `import sys; sys.path.insert(0, ${JSON.stringify(path.join(root, 'tools', 'check'))}); import hometv_check as h, check_report as c
+def block(app_id, title, tizen_id):
+    f = {"app_id": app_id, "app_title": title, "app_tizen_id": tizen_id, "app_package_name": tizen_id.split(".")[0], "is_removable": 1}
+    return "-" * 93 + "\\n" + "".join(f"--------------{k:<36}={v}-------------\\n" for k, v in f.items())
+text = "apps count: 2\\n" + block("111299001912", "YouTube", "9Ur5IzDKqV.TizenYouTube") + block("3201907018807", "Netflix", "org.tizen.netflix-app")
+known = c.known_from_app_ids(h.app_ids(text, store_ids=True))
+print(len(h.app_ids(text)), known["youtube"], known["netflix"], known["prime"])`;
+  const res = spawnSync(python, ['-c', script], { encoding: 'utf8' });
+  assert.equal(res.status, 0, res.stderr);
+  assert.equal(res.stdout.trim(), '2 True True False');
+});
+
 test('the check remembers its step, and how the person came back', () => {
   const mem = new Map();
   const storage = { getItem: (k) => (mem.has(k) ? mem.get(k) : null), setItem: (k, v) => mem.set(k, String(v)) };
