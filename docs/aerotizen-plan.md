@@ -15,8 +15,9 @@ Rebecca's decision (2026-11-04 18:38): build HomeTV for Samsung on [AeroTizen](h
 
 ## How the code is arranged
 
-1. **hometv-tizen pulls AeroTizen in as a git subtree** at a pinned commit (`vendor/aerotizen/`), so its history,
-   licence and authors stay intact and upstream fixes merge in with one command. GitHub forks of public repos are
+1. **hometv-tizen pulls AeroTizen in as a git subtree** at a pinned commit (`vendor/aerotizen/`, squashed: one
+   commit that names the upstream commit), so its licence and authors stay intact and upstream fixes merge in with
+   one command. GitHub forks of public repos are
    public, and this repo stays private until it works (Rebecca, 18:04), so a fork isn't the way for now.
 2. **Our app** is AeroTizen's launcher with HomeTV's screens: its `js/` platform scripts and `service/` unchanged
    where possible, our screens in place of `src/home` and `src/settings`. Its own id (not `DclHome001`), so it
@@ -57,8 +58,13 @@ Rebecca is in `work\feedback.md`; the checklist changes only if she says so.
 
 ## Order
 
+Done so far (2026-11-04): AeroTizen is in `vendor/aerotizen/` (subtree from `093c2d5`, squashed, unmodified), with
+the credit in `LICENSE` and the README. Its front end doesn't build on this PC yet: the PC's npm mirror has no
+`lucide-preact@1.66.0` (its icon package). Its plain-ES5 parts (`launcher/js/`, `launcher/service/`) need no build.
+
 1. After Rebecca's answer on the first call: adapt the checklist if needed.
-2. Subtree AeroTizen in; build its launcher unchanged in this repo; run its browser preview.
+2. ~~Subtree AeroTizen in~~; build its launcher unchanged in this repo (waits on the npm mirror); run its browser
+   preview.
 3. Rename the app id; run HomeTV's Home row inside it against the fake TV.
 4. Port the screens one at a time, smallest first (Home, then Launcher settings, then the catalogue screens), each
    checked in the browser preview.
