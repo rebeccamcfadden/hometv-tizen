@@ -643,7 +643,11 @@
 
   // ---- after Home shows ----
 
-  /** Keeps the page shown and the good, next or previous one (two at most); returns the versions to delete. */
+  /**
+   * Keeps the page shown and the good, next or previous one (two at most); returns the versions to delete. Pages this
+   * app can't show (skipped, signed with a key it no longer trusts, not newer than its own) go, without being skipped,
+   * so a trusted copy of the same version can be downloaded again.
+   */
   function tidy(s) {
     var keep = {};
     var order = [current, s.good, s.next, s.prev];
@@ -651,7 +655,7 @@
     var v;
     for (var i = 0; i < order.length; i++) {
       v = order[i];
-      if (v && s.pages[v] && !keep[v] && kept < shell.maxPages && (v === current || s.skip.indexOf(v) < 0)) {
+      if (v && s.pages[v] && !keep[v] && kept < shell.maxPages && (v === current || usable(s, v))) {
         keep[v] = true;
         kept++;
       }

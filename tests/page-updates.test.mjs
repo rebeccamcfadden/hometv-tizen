@@ -470,30 +470,51 @@ for (const api of ['openFile', 'resolve']) {
     assert.equal(app.win.shown, 'bundled');
   });
 
-  test(`${api}: after a reinstall that keeps the TV's data, the undo steps still hold`, async () => {
+  test(`${api}: after a reinstall with a new key, pages signed with the old one go`, async () => {
     const { tv, srv } = makeTv(api);
     srv.offer = release('1.1.0');
     (await start(tv, 11000)).stop();
     (await start(tv)).stop(); // 1.1.0 is good
 
-    // A new app trusting a new key only (the old one lost or leaked): pages signed with the old key aren't shown.
+    // A new app trusting a new key only (the old one lost or leaked): pages signed with the old key aren't shown,
+    // and go from the TV once Home shows.
     tv.shellConfig = shellConfig({ pubKeys: [otherKeys.publicKey] });
     srv.online = false;
     const newKey = await start(tv);
     assert.equal(newKey.win.shown, 'bundled');
+    await newKey.idle();
+    assert.deepEqual(files(tv), []);
+    assert.deepEqual(newKey.state().skip, [], 'not skipped: a trusted copy may come back');
     newKey.stop();
+  });
 
-    // Both keys trusted again: the page is fine to show.
-    tv.shellConfig = shellConfig({ pubKeys: [otherKeys.publicKey, keys.publicKey] });
-    const both = await start(tv);
-    assert.equal(both.win.shown, '1.1.0');
-    both.stop();
-
-    // A new app whose own page is as new as the downloaded one: the app's own page shows.
+  test(`${api}: after a reinstall with a newer own page, that page shows`, async () => {
+    const { tv, srv } = makeTv(api);
+    srv.offer = release('1.1.0');
+    (await start(tv, 11000)).stop();
+    (await start(tv)).stop(); // 1.1.0 is good
+    srv.online = false;
     tv.shellConfig = shellConfig();
     tv.shellConfig.page.version = '1.1.0';
     const own = await start(tv);
     assert.equal(own.win.shown, 'bundled');
+  });
+
+  test(`${api}: after a key change, the same version signed with the new key downloads again`, async () => {
+    const { tv, srv } = makeTv(api);
+    srv.offer = release('1.1.0');
+    (await start(tv, 11000)).stop();
+    (await start(tv)).stop(); // 1.1.0 is good, signed with the old key
+    tv.shellConfig = shellConfig({ pubKeys: [otherKeys.publicKey] });
+    srv.offer = release('1.1.0', { key: otherKeys.privateKey });
+    const a = await start(tv, 11000);
+    assert.equal(a.win.shown, 'bundled');
+    assert.equal(a.status().lastCheck.result, 'downloaded 1.1.0', 'not "up to date"');
+    assert.deepEqual(a.state().skip, []);
+    a.stop();
+    const b = await start(tv);
+    assert.equal(b.win.shown, '1.1.0');
+    assert.equal(b.state().pages['1.1.0'].key, otherKeys.publicKey);
   });
 }
 

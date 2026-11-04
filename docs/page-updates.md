@@ -111,7 +111,7 @@ before, so raise `package.json`'s version too.
 - **A lost or leaked key:** make a new pair, put the new public key in `tizen/page-keys.txt` (remove the old one),
   and reinstall the app with the laptop. TVs only trust the keys their app was built with, and each downloaded page
   remembers the key that signed it, so pages signed with the old key are no longer shown even if the reinstall keeps
-  them. Then release the page again with the new key, at a higher version.
+  them; they're deleted once Home shows. Then release the page again with the new key (the same version is fine).
 
 Whether reinstalling or uninstalling the app keeps its private storage (the downloaded pages and their records)
 isn't checked yet. The steps above don't depend on it. An uninstall and a fresh install start with the app's own
