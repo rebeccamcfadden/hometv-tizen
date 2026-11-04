@@ -20,13 +20,13 @@ Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off), [docs/
 | Path | What it is |
 |---|---|
 | `package.json` | The module as TizenBrew reads it: `packageType: app`, `appPath`, `serviceFile`, the remote keys to register. |
-| `app/` | The page: Home's app row and the Checks screen for the TV call. TypeScript and Vite, built for Chromium 56 (2018 Samsungs). `app/aero-glue.js` connects AeroTizen's scripts to it. `app/loader/` is the installed app's shell: it shows the newest signed page the TV has and fetches newer ones ([docs/page-updates.md](docs/page-updates.md)). |
+| `app/` | The page: Home's app row, Search and the title page (ported from design_preview, on its mock catalogue: `app/src/data/`, temporary copies), and the Checks screen for the TV call. TypeScript and Vite, built for Chromium 56 (2018 Samsungs). `app/aero-glue.js` connects AeroTizen's scripts to it. `app/loader/` is the installed app's shell: it shows the newest signed page the TV has and fetches newer ones ([docs/page-updates.md](docs/page-updates.md)). |
 | `service/service.js` | The service: opens apps (`tizen.application.launch`), lists them, runs the spike's checks, serves `/report` to a phone. Plain ES5 for Node 4.4.3. |
 | `service/pages.js` | The own app's second service: the API keys page (`keys-page.html`) a phone opens from the QR on HomeTV's API keys screen, on port 8766, home network only. It checks each key with one free request and keeps it in the app's private folder. Plain ES5. |
 | `tools/` | The fake TV for a PC (`mock-tizen.mjs`, `fake-samsung.mjs`, `fake-keys.mjs`, `dev-service.mjs`), the dev runner, the old-engine check, the emulator packaging, and page updates (`page-build`, `page-key`, `page-release`, `page-serve`). |
 | `tizen/` | HomeTV as its own Samsung app: `config.xml`, and `page-keys.txt` (the public keys a downloaded page must be signed with); `tools/package-tizen.mjs` adds the page, AeroTizen's Home watcher (its app id and port changed) and the pages service, and signs it. |
 | `vendor/aerotizen/` | AeroTizen, unmodified (`git subtree`, squashed, from `093c2d5`). Update: `git subtree pull --prefix vendor/aerotizen https://github.com/helalaou/AeroTizen.git main --squash`. |
-| `tests/` | `npm test`: the service against the fake TV, the old-engine check, and page updates on a fake TV page (`fake-browser.mjs`). |
+| `tests/` | `npm test`: the service against the fake TV, the old-engine check, page updates on a fake TV page (`fake-browser.mjs`), and the page's own rules (Search, the offers, title links) bundled from TypeScript (`ts-module.mjs`). |
 
 ## Try it on a PC
 
@@ -43,7 +43,8 @@ npm test
 ```
 
 The keyboard stands in for the remote: arrows, Enter for OK, Esc or Backspace for Back, C (the Blue or Info key on
-the remote) for the Checks screen. The pill at the top says where it runs: **On the TV**, **Fake TV on this PC**,
+the remote) for the Checks screen. On Search (the magnifier at the top of Home) letters and digits type, as the
+on-screen keyboard does. The pill at the top says where it runs: **On the TV**, **Fake TV on this PC**,
 or **Preview** (no service: `npm run dev -- --no-service`).
 
 The fake TV has Netflix and Prime Video only under their pre-2020 ids and no Hulu, so the service's fallback and

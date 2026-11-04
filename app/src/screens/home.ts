@@ -6,6 +6,7 @@ import { bridge, type AppInfo } from '../bridge';
 import { h } from '../shell/dom';
 import { focusable } from '../shell/focus';
 import { shell, type Screen } from '../shell/app';
+import { icon } from '../ui/icons';
 import { showChecks } from './checks';
 import { showKeys } from './keys';
 
@@ -70,9 +71,19 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
   const screen = {
     label: 'Home',
     el,
+    // The first app, not the search icon above it.
+    defaultFocus: () => el.querySelector('.approw [data-focus]') as HTMLElement | null,
     setApps(apps: AppInfo[] | null) {
       while (el.firstChild) el.removeChild(el.firstChild);
-      el.appendChild(topBar('HomeTV'));
+      const bar = topBar('HomeTV');
+      // Search, as design_preview's top bar has it: ↑ from the apps reaches it.
+      const search = focusable(h('button.searchbtn', { 'aria-label': 'Search', html: icon('search', 30) }), {
+        key: 'search',
+        onOk: () => shell.goTab('search'),
+      });
+      const right = bar.querySelector('.topright') as HTMLElement;
+      right.insertBefore(search, right.firstChild);
+      el.appendChild(bar);
       el.appendChild(h('h2.rowtitle', 'Apps'));
       const row = h('div.approw');
       for (const app of HOME_APPS) row.appendChild(tile(app, apps ? apps.filter((a) => a.key === app.key)[0] || null : null));

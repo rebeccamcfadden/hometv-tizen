@@ -4,7 +4,7 @@
 // on a Samsung (the Apple TV app and Apple's store).
 import { APP_BRAND, HOME_APPS as SHARED_HOME_APPS } from '@hometv/core/services.ts';
 
-const SAMSUNG_KEY: Record<string, string> = { appletvplus: 'appletv' };
+export const SAMSUNG_KEY: Record<string, string> = { appletvplus: 'appletv' };
 
 export interface HomeApp {
   /** The app's name on Samsung (service.js's APPS table). */

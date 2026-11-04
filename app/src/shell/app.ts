@@ -57,6 +57,13 @@ const KEYS: Record<number, Key> = {
 
 const onScreen = (el: HTMLElement | null | undefined) => !!el && document.body.contains(el) && el.getClientRects().length > 0;
 
+/**
+ * The character a key types, or ''. The remote's number keys (keyCodes 48-57 once registered) may come without a
+ * `key` on older TVs, so their keyCode stands in.
+ */
+const typed = (e: KeyboardEvent): string =>
+  e.key && e.key.length === 1 ? e.key : e.keyCode >= 48 && e.keyCode <= 57 ? String.fromCharCode(e.keyCode) : '';
+
 class Shell {
   stage!: HTMLElement;
   scale = 1;
@@ -307,11 +314,12 @@ class Shell {
     } else if (key) {
       e.preventDefault();
       this.move(key);
+    } else if (s && s.onText && typed(e) && s.onText(typed(e))) {
+      // A screen that takes typing (Search) has the printable keys before the remote's extra keys (C opens Checks).
+      e.preventDefault();
     } else if (this.extraKeys[e.keyCode]) {
       e.preventDefault();
       this.extraKeys[e.keyCode]();
-    } else if (e.key && e.key.length === 1 && s && s.onText && s.onText(e.key)) {
-      e.preventDefault();
     }
   }
 
