@@ -14,8 +14,9 @@ in the HomeTV project. Rebecca (@rebeccamcfadden) owns the project. Report only 
     services (ES5, Node 4): the key page (`pages.js`); AeroTizen's watcher is packaged from `vendor/`. `app/loader/`
     is the signed-update shell (`docs/page-updates.md`). `tizen/` + `tools/package-tizen.mjs` make the app. `tools/`
     has a fake TV for the PC (`npm run dev`).
-- Logic shared with the Android launcher's prototype will come from `packages/core` (hometv-launcher PR #158, open):
-  don't copy design_preview code into this repo except where your brief says so, marked as temporary.
+- Logic shared with the Android launcher's prototype comes from `@hometv/core` (hometv-launcher's `packages/core`, the
+  submodule `vendor/hometv-launcher`; never edit it here, and run `git submodule update --init --depth 1` in a new
+  worktree): don't copy design_preview code into this repo except where your brief says so, marked as temporary.
 
 ## Rules (not negotiable)
 

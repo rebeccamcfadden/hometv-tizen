@@ -35,7 +35,7 @@ export function topBar(title: string): HTMLElement {
 function tile(app: (typeof HOME_APPS)[number], info: AppInfo | null): HTMLElement {
   const missing = !!info && info.installed === false;
   const el = h('button.tile' + (missing ? '.missing' : ''), { style: `background:${app.bg}` });
-  el.appendChild(h('span.mark', { style: `font-weight:${app.weight}` }, app.mark));
+  el.appendChild(h('span.mark', { style: `font-weight:${app.weight};color:${app.fg}` }, app.mark));
   // The TV's own artwork for the app when it has some (Samsung's icon cache); the wordmark stays underneath.
   const art = bridge.artwork(app.key);
   if (art.length) {

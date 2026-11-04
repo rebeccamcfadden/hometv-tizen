@@ -53,6 +53,9 @@ storage. Samsung's old engine needs its own CSS (no grid, no flex `gap`) anyway.
 1. One PR in hometv-launcher (`design_preview: shared logic in packages/core`): move the six items above, the two
    small refactors, the alias, the tests. design_preview behaves exactly as before; `npm run build` passes. About
    half a day. Needs the lead's go-ahead (it touches design_preview and adds a top-level folder).
-2. hometv-tizen adds the submodule and uses `services.ts` and `tokens.css` for Home's row (replacing the stand-ins
-   in `app/src/apps.ts`). An hour.
+2. hometv-tizen adds the submodule and uses `services.ts` for Home's row (`app/src/apps.ts` adapts it: Samsung's
+   name for each app, brand colours) and `keys.ts` for the API keys screen. **Done 2026-11-04**, pinned to 2bf3c2d
+   (#158's merge). `tokens.css` comes in with the first ported screens (W3/W4).
+   To move to a newer packages/core: `git -C vendor/hometv-launcher fetch --depth 1 origin main`, check out the
+   commit, `npm run build && npm test`, then commit the new pin.
 3. The Java ports, one at a time, when the Samsung module needs them (title cards, prices).

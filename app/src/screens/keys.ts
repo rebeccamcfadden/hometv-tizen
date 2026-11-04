@@ -12,7 +12,7 @@ import { h, replace } from '../shell/dom';
 import { focusable } from '../shell/focus';
 import { shell, type Screen } from '../shell/app';
 import { encodeQr, dark } from '../qr';
-import { KEY_INFO, keyStatus, keysValue, type KeyEntry, type KeyId } from '../keyWords';
+import { KEY_INFO, keyStatus, keysValue, type KeyEntry, type KeyId } from '@hometv/core/keys.ts';
 import { topBar } from './home';
 
 /** The service's port on the TV. */

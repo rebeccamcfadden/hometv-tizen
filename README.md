@@ -30,9 +30,12 @@ Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off), [docs/
 
 ## Try it on a PC
 
-Node 20 or newer.
+Node 20 or newer. The shared logic (`@hometv/core`) is a submodule of hometv-launcher, `vendor/hometv-launcher`,
+pinned to a commit; only its `packages/core/` is needed.
 
 ```sh
+git submodule update --init --depth 1 vendor/hometv-launcher   # once, after cloning
+git -C vendor/hometv-launcher sparse-checkout set --no-cone /packages/core/   # optional: only that folder on disk
 npm install
 npm run dev      # the service with a fake 2019 Samsung on :8766, the key page's service on :8767, the page on http://localhost:5180
 npm run build    # type-checks, builds dist/, then checks it runs on the oldest TVs

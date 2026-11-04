@@ -64,6 +64,8 @@ export default defineConfig({
   root: 'app',
   base: './',
   plugins: [aeroScripts(), classicScript()],
+  // The shared package (docs/shared-package.md), a submodule pinned to a hometv-launcher commit.
+  resolve: { alias: { '@hometv/core': path.resolve(__dirname, 'vendor/hometv-launcher/packages/core/src') } },
   server: { port: 5180, strictPort: true },
   build: {
     outDir: '../dist',

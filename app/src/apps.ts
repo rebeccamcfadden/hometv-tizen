@@ -1,24 +1,34 @@
-// Home's app row for a US household. The names, wordmarks and weights follow design_preview's HOME_APPS
-// (src/data/services.ts) until they come from the shared package (docs/shared-package.md); the keys match the
-// service's APPS table, which holds Samsung's app ids.
+// Home's app row: design_preview's default row and brand colours, from the shared package (@hometv/core, the
+// submodule vendor/hometv-launcher, docs/shared-package.md). `key` is the name service/service.js and AeroTizen's
+// glue know the app by on Samsung; it differs only where the shared package tells two services apart that are one app
+// on a Samsung (the Apple TV app and Apple's store).
+import { APP_BRAND, HOME_APPS as SHARED_HOME_APPS } from '@hometv/core/services.ts';
+
+const SAMSUNG_KEY: Record<string, string> = { appletvplus: 'appletv' };
 
 export interface HomeApp {
+  /** The app's name on Samsung (service.js's APPS table). */
   key: string;
+  /** The shared package's id. */
+  id: string;
   name: string;
   /** The wordmark on its tile, until real logos are licensed. */
   mark: string;
   weight: number;
-  /** Tile colour, a stand-in for the app's logo art. */
+  /** Tile and wordmark colours, a stand-in for the app's logo art. */
   bg: string;
+  fg: string;
 }
 
-
-export const HOME_APPS: HomeApp[] = [
-  { key: 'netflix', name: 'Netflix', mark: 'NETFLIX', weight: 700, bg: '#141414' },
-  { key: 'youtube', name: 'YouTube', mark: '▶ YouTube', weight: 600, bg: '#212121' },
-  { key: 'prime', name: 'Prime Video', mark: 'prime video', weight: 600, bg: '#0f171e' },
-  { key: 'disney', name: 'Disney+', mark: 'Disney+', weight: 400, bg: '#0e1a4f' },
-  { key: 'max', name: 'HBO Max', mark: 'HBO max', weight: 700, bg: '#002be7' },
-  { key: 'appletv', name: 'Apple TV', mark: 'Apple TV', weight: 400, bg: '#1c1c1e' },
-  { key: 'hulu', name: 'Hulu', mark: 'hulu', weight: 700, bg: '#0b2e1a' },
-];
+export const HOME_APPS: HomeApp[] = SHARED_HOME_APPS.map((a) => {
+  const brand = APP_BRAND[a.id];
+  return {
+    key: SAMSUNG_KEY[a.id] || a.id,
+    id: a.id,
+    name: a.name,
+    mark: a.mark,
+    weight: a.weight,
+    bg: brand ? brand.bg : '#1c1c1e',
+    fg: brand ? brand.fg : '#ffffff',
+  };
+});
