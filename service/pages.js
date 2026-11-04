@@ -8,7 +8,8 @@
  *   GET  /keys          the phone page (keys-page.html): nothing secret in it; the code comes from the address's #fragment
  *   GET  /keys/state    each key's state and last four characters            } the code as Authorization: Bearer;
  *   POST /keys          {"id": "tmdb", "key": "…"}; answers once it's checked }  5 wrong codes lock both for 5 minutes
- * Only from a private, loopback or link-local address; a request must arrive whole within 10 s and at most 64 KB; the
+ * Only from a private, loopback or link-local address, naming the TV by its address (not a name, against DNS
+ * rebinding); a request must arrive whole within 10 s and at most 64 KB; the
  * key routes answer only while the TV shows its API keys screen (it holds them open, below). Nothing is logged: the
  * body is a key. Keys live in the app's private folder (wgt-private), readable by this app only, never in git.
  *
@@ -201,6 +202,17 @@ function isHomeAddress(a) {
   );
 }
 
+/** The Host a request names: an address typed or scanned (IPv4, [IPv6] or localhost), never a name. */
+function isAddressHost(host) {
+  return /^(\d{1,3}(\.\d{1,3}){3}|\[[0-9a-f:.]+\]|localhost)(:\d+)?$/i.test(String(host || ''));
+}
+
+/** The Host the TV's own screen names: this service on loopback, at its own port. */
+function isLoopbackHost(host, port) {
+  var m = /^(127\.0\.0\.1|localhost|\[::1\]):(\d+)$/i.exec(String(host || ''));
+  return !!m && Number(m[2]) === port;
+}
+
 /**
  * The TV's own screen, not a web page: HomeTV's packaged page sends no Origin, "null", file:// or the app's own
  * scheme (as AeroTizen's watcher trusts it). A web page opened in the TV's browser, or a TizenBrew module
@@ -327,7 +339,6 @@ function create(opts) {
   var wrong = 0;
   var lockedUntil = 0;
   var heldUntil = 0;
-  var portTaken = false;
 
   function blank() {
     return { code: '', keys: { tmdb: { key: '', state: '' }, watchmode: { key: '', state: '' }, motn: { key: '', state: '' } } };
@@ -473,7 +484,6 @@ function create(opts) {
       addresses: homeAddresses(),
       code: data.code,
       saving: !!store,
-      portTaken: portTaken,
       keys: states()
     };
   }
@@ -666,8 +676,11 @@ function create(opts) {
     try {
       if (!isHomeAddress(addr)) return fail(res, 403, MSG.notHome);
       var url = String(req.url || '').split('?')[0];
+      // A name that some web page made point at this TV (DNS rebinding) is refused: only the address itself.
+      var host = String(req.headers.host || '');
+      if (!isAddressHost(host)) return fail(res, 403, MSG.notHome);
       if (url === '/ping' || url.indexOf('/tv/') === 0) {
-        if (!isLoopbackAddress(addr)) return fail(res, 403, MSG.tvOnly);
+        if (!isLoopbackAddress(addr) || !isLoopbackHost(host, server.address() ? server.address().port : port)) return fail(res, 403, MSG.tvOnly);
         return tv(req, res, url);
       }
       phone(req, res, url);
@@ -698,11 +711,8 @@ function create(opts) {
       function listen(s) {
         store = s;
         load();
-        server.once('error', function (e) {
-          // Another service holds the port (the TizenBrew module's uses 8766 too).
-          portTaken = e && e.code === 'EADDRINUSE';
-          cb(e);
-        });
+        // Another service may hold the port (the TizenBrew module's uses 8766 too): the caller tries again later.
+        server.once('error', cb);
         server.listen(port, function () {
           cb(null);
         });
@@ -735,19 +745,30 @@ function create(opts) {
 // ---------------------------------------------------------------- Tizen's web service lifecycle
 
 var instance = null;
+var retry = null;
+/** Another service held the port: try again this often, and whenever the TV's screen starts this service. */
+var RETRY_MS = 30000;
 
 module.exports = {
   create: create,
   onStart: function () {
     if (instance) return;
-    instance = create({ tizen: typeof tizen !== 'undefined' ? tizen : null });
-    instance.start();
+    clearTimeout(retry);
+    var mine = create({ tizen: typeof tizen !== 'undefined' ? tizen : null });
+    instance = mine;
+    mine.start(function (e) {
+      if (!e || instance !== mine) return;
+      mine.stop();
+      instance = null;
+      retry = setTimeout(module.exports.onStart, RETRY_MS);
+    });
   },
   onRequest: function () {
     // The TV's screen starts this service with an app control; it may come before or instead of onStart.
     if (!instance) module.exports.onStart();
   },
   onExit: function () {
+    clearTimeout(retry);
     if (instance) instance.stop();
     instance = null;
   },
@@ -764,6 +785,8 @@ module.exports = {
     isHomeAddress: isHomeAddress,
     isLoopbackAddress: isLoopbackAddress,
     trustedOrigin: trustedOrigin,
+    isAddressHost: isAddressHost,
+    isLoopbackHost: isLoopbackHost,
     CODE_ALPHABET: CODE_ALPHABET,
     MAX_BODY: MAX_BODY,
     MAX_KEY: MAX_KEY,

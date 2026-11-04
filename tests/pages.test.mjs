@@ -227,6 +227,34 @@ test('a request that trickles in is cut at the deadline', async () => {
   assert.ok(closed < 3000, `closed after ${closed} ms`);
 });
 
+test('a name pointed at the TV (DNS rebinding) is refused; the address itself is not', async () => {
+  assert.equal((await call('GET', '/tv/keys', { headers: { Host: `attacker.example:${dev.port}` } })).status, 403);
+  assert.equal((await call('GET', '/ping', { headers: { Host: `127.0.0.1:${dev.port + 1}` } })).status, 403);
+  assert.equal((await call('GET', '/tv/keys', { headers: { Host: `localhost:${dev.port}` } })).status, 200);
+  assert.equal((await call('GET', '/keys', { from: PHONE, headers: { Host: `tv.attacker.example:${dev.port}` } })).status, 403);
+  assert.equal((await call('GET', '/keys', { from: PHONE, headers: { Host: `192.168.1.40:${dev.port}` } })).status, 200);
+  // The TV's routes want loopback in the Host too, not the TV's home address.
+  assert.equal((await call('GET', '/tv/keys', { headers: { Host: `192.168.1.40:${dev.port}` } })).status, 403);
+  assert.equal(rules.isAddressHost('[fe80::1]:8766'), true);
+  assert.equal(rules.isAddressHost('hometv.local:8766'), false);
+  assert.equal(rules.isLoopbackHost('[::1]:8766', 8766), true);
+  assert.equal(rules.isLoopbackHost('127.0.0.1', 8766), false);
+});
+
+test('a port another service holds is reported, so the service can try again', async () => {
+  const blocker = http.createServer();
+  await new Promise((r) => blocker.listen(0, r));
+  const taken = blocker.address().port;
+  const inst = dev.pages.create({ port: taken, dataDir });
+  const err = await new Promise((r) => inst.start(r));
+  assert.equal(err && err.code, 'EADDRINUSE');
+  inst.stop();
+  await new Promise((r) => blocker.close(r));
+  const again = dev.pages.create({ port: taken, dataDir });
+  assert.equal(await new Promise((r) => again.start(r)), null);
+  again.stop();
+});
+
 test('a new code: the old one stops working', async () => {
   await hold();
   const old = await code();

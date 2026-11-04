@@ -97,8 +97,8 @@ So for now **Watch on** opens the service's app, and whether to look further or 
   the page open while it shows. To learn on the TV: that a second service in one package starts, that it can listen
   on all addresses and a phone reaches it, that the TV's Node checks TMDB's and the others' HTTPS certificates (an
   old Node's certificate list may not know theirs: the key is then kept as "not checked"), and the Origin the
-  packaged page sends (the TV's routes trust "null" and `file://`, as AeroTizen's watcher does; a web page that hides
-  in a sandboxed frame sends "null" too).
+  packaged page sends (the TV's routes trust "null" and `file://`, as AeroTizen's watcher does, and want a loopback
+  Host, against DNS rebinding; a web page that hides in a sandboxed frame sends "null" too).
 
 ## 3. What TizenBrew needs on the TV
 
