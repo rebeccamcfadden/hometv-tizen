@@ -1,7 +1,8 @@
 // Checks that what goes to the TV runs on the oldest engine we aim for: 2018 Samsungs (Tizen 4.0, Chromium 56) and
 // TizenBrew's service on Node 4.4.3 (Tizen 3). Run by `npm run build`; exits 1 with the reasons.
 //
-// - service/service.js must parse as ES5 (no let/const, arrows, template strings, classes).
+// - service/service.js and service/pages.js must parse as ES5 (no let/const, arrows, template strings, classes), and
+//   so must the phone page's script in service/keys-page.html.
 // - dist/**/*.js must parse as an ES2017 classic script (no modules: <script type="module"> is Chromium 61; no
 //   object spread, optional chaining, ?? or class fields: Chromium 60-84).
 // - dist/**/*.css must avoid CSS that Chromium 56 lacks: grid (57), gap (flex 84), :focus-visible (86),
@@ -60,6 +61,20 @@ const JS_BUILTINS = [
 
 parseAs(path.join(root, 'service', 'service.js'), 5, 'script');
 if (fs.existsSync(path.join(root, 'tizen', 'service-host.js'))) parseAs(path.join(root, 'tizen', 'service-host.js'), 5, 'script');
+// The app's pages service (Node 4 on the oldest TVs) and the phone page's own script (older phones).
+if (fs.existsSync(path.join(root, 'service', 'pages.js'))) parseAs(path.join(root, 'service', 'pages.js'), 5, 'script');
+const keysPage = path.join(root, 'service', 'keys-page.html');
+if (fs.existsSync(keysPage)) {
+  const scripts = /<script>([\s\S]*?)<\/script>/g;
+  const html = fs.readFileSync(keysPage, 'utf8');
+  for (let m = scripts.exec(html); m; m = scripts.exec(html)) {
+    try {
+      parse(m[1], { ecmaVersion: 5, sourceType: 'script' });
+    } catch (e) {
+      problems.push(`service/keys-page.html: script not ES5: ${e.message}`);
+    }
+  }
+}
 
 const dist = path.join(root, 'dist');
 if (!fs.existsSync(dist)) problems.push('dist/ is missing: run `npm run build` first');

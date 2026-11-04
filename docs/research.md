@@ -90,6 +90,15 @@ So for now **Watch on** opens the service's app, and whether to look further or 
 - To check on the TV: that a phone on the same Wi-Fi reaches the port (the TV could block it).
 - Fallback if it can't: type the keys on the TV with the remote. TMDB's short API key (32 letters and digits, not the
   long token) and Watchmode's key make that slow but possible.
+- **Built (2026-11-04), in the own app, not yet tried on a TV:** a second background service, `HomeTVPages`
+  (`service/pages.js`, a port of the launcher's `KeyInbox`, `KeyRules` and `ApiKeys`), serves the page on port 8766
+  and keeps the keys in `hometv-keys-v1.json` in the app's `wgt-private` folder (only this app's user can read it,
+  mode 0600; AeroTizen keeps its own settings there the same way). The TV's API keys screen (Home's lower row) holds
+  the page open while it shows. To learn on the TV: that a second service in one package starts, that it can listen
+  on all addresses and a phone reaches it, that the TV's Node checks TMDB's and the others' HTTPS certificates (an
+  old Node's certificate list may not know theirs: the key is then kept as "not checked"), and the Origin the
+  packaged page sends (the TV's routes trust "null" and `file://`, as AeroTizen's watcher does; a web page that hides
+  in a sandboxed frame sends "null" too).
 
 ## 3. What TizenBrew needs on the TV
 
