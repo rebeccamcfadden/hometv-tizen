@@ -46,9 +46,13 @@ Tizen Studio's CLI with Samsung's TV extension (`TV-SAMSUNG-Public-Emulator`, `T
 The emulator is Tizen 10, so it checks the `tizen` calls, not the old engine (`npm run build` does that). It has no
 Netflix: opening apps there only shows the call is made.
 
+**It only installs apps signed with a Samsung certificate** (checked 2026-11-04: Tizen's own bundled distributor
+certificates are refused with "Invalid certificate chain"). Making one needs a Samsung account sign-in in a browser
+(Tizen Studio's Certificate Manager with the Samsung Certificate Extension); until then, use `npm run dev`.
+
 ```sh
 tizen certificate -a hometv -p <password> -f hometv-emulator           # once, a local author certificate
-tizen security-profiles add -n hometv-emulator -a <path>/hometv-emulator.p12 -p <password>
+tizen security-profiles add -n hometv-emulator -a <path>/hometv-emulator.p12 -p <password> -d <Samsung distributor .p12> -dp <its password>
 npm run build && node tools/package-tizen.mjs
 tizen install -n tizen/<name>.wgt -t <emulator>
 ```

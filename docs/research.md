@@ -185,9 +185,9 @@ What helps, from least to most:
    ruled out (Tizen Studio and a certificate per TV) is handled by TizenBrew Installer here, as it is for TizenBrew.
    The three Samsung home screens in upstream's SHOWCASE (Skylight, Clean TV Home, Blocky Cabin) are all their own
    apps like this. The spike's `tizen/` folder is already that app, for the emulator.
-3. **Recommendation:** decide after the first TV call (it shows whether TizenBrew Installer works on their TV and
-   what the certificate looks like). If it does, make HomeTV its own app with the cached page, and keep the
-   TizenBrew module as a fallback for TVs where that fails. A question for Rebecca is in `work\feedback.md`.
+3. **Decided** (Rebecca, 18:35): after the first TV call, HomeTV becomes its own app with the cached page, the
+   TizenBrew module as a fallback; a public release only once it works. Built on AeroTizen's base
+   ([launcher-replacement.md](launcher-replacement.md)).
 
 ## Risks, in order
 

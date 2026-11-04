@@ -68,9 +68,9 @@ reuses AeroTizen's watcher.
    Samsung TV Plus off, Autorun Last App on (so a wake from standby returns to HomeTV).
 4. **Native Home: not on the family TV for now.** It's experimental, unproven on most models, and changes a system
    setting. Revisit if AeroTizen's table grows to the family's model.
-5. **Consider building on AeroTizen** rather than from nothing: MIT-licensed, maintained (commits today), with the
-   install, certificate and update tool HomeTV would otherwise write. HomeTV's own part is the screen (catalogue,
-   prices, Pick for me) from `design_preview/`. A question for Rebecca.
+5. **Build on AeroTizen** (Rebecca, 18:38: yes, our screens on its base, its MIT licence kept and credited):
+   MIT-licensed, maintained (commits today), with the install, certificate and update tool HomeTV would otherwise
+   write. HomeTV's own part is the screen (catalogue, prices, Pick for me) from `design_preview/`.
 
 ## What it costs the household
 
