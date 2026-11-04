@@ -72,8 +72,8 @@ HBO Max, Apple TV or Hulu on Tizen. Three candidates, each one button on the tes
    today's YouTube opens a "connect your phone" pane instead of the video
    ([YTCAST.md](https://github.com/radubirsan/remotetvprogam/blob/main/YTCAST.md)).
 
-So the plan is: **Watch on** opens the service's app. If a candidate opens titles on the family's TV, it's a bonus
-for that service.
+So for now **Watch on** opens the service's app, and whether to look further or accept that is Rebecca's decision
+(feedback.md, Tizen 19:32). If a candidate opens titles on the family's TV, it's a bonus for that service.
 
 ## 2. How do the household's keys get on without ADB?
 

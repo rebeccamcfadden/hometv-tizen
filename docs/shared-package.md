@@ -2,8 +2,10 @@
 
 The Samsung module and `design_preview/` (in [hometv-launcher](https://github.com/rebeccamcfadden/hometv-launcher))
 are both TypeScript web pages for the same launcher. The plan (BACKLOG › Tizen port) is to share their logic as a
-package, not to copy it. The Android launcher's Java stays the reference for behaviour. Nothing here is done yet:
-it needs the lead's go-ahead, because it changes hometv-launcher.
+package, not to copy it. The Android launcher's Java stays the reference for behaviour. **Step 1 is under way**
+(the lead's go, 19:20): one PR in hometv-launcher with everything below except `offers.ts`, which follows once
+builder-1's Two regions work on it has merged. On Samsung there is one region (Rebecca, 19:30): it uses the
+single-region path of the offers.
 
 ## What moves, first
 
@@ -33,12 +35,10 @@ storage. Samsung's old engine needs its own CSS (no grid, no flex `gap`) anyway.
    `resolve.alias`) pointing at `../packages/core/src`. No workspace, no new install step: `npm install` and
    `npm run build` in `design_preview/` work as today, and the Pages workflow (which builds `design_preview/`) needs no
    change because the folder is in the same checkout.
-3. **hometv-tizen**, now: a git submodule of hometv-launcher pinned to a commit (shallow and sparse, only
+3. **hometv-tizen** takes it as a git submodule of hometv-launcher pinned to a commit (shallow and sparse, only
    `packages/core/`, so it doesn't pull the 110 MB repo), with the same alias. Updating is a deliberate bump of the
-   pinned commit. No npm account needed.
-4. **hometv-tizen**, once there is an npm account: hometv-launcher publishes `packages/core` (for example as
-   `@rebeccamcfadden/hometv-core`), and hometv-tizen depends on a version. The module has to be on npm anyway for
-   TizenBrew, so this adds no new account.
+   pinned commit. That's the route for good: HomeTV on Samsung is its own app (Rebecca, 18:35), so nothing is
+   published to npm.
 
 ## Rules for the package
 

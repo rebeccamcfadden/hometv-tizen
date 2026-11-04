@@ -11,6 +11,9 @@ Decisions and deferred work for HomeTV on Samsung. The research is in [docs/](do
 | 2026-11-04 18:35 | After the first call, HomeTV becomes **its own app** (works offline; [research.md › Working without the internet](docs/research.md#working-without-the-internet)), the TizenBrew module as a fallback. A public release only once it works. |
 | 2026-11-04 18:38 | Build on **AeroTizen** ([helalaou/AeroTizen](https://github.com/helalaou/AeroTizen)): HomeTV's screens on its base (install tool, certificate, Home helper), keeping its MIT licence and a clear credit. Plus a Tizen-only item: Continue watching (below). |
 | 2026-11-04 18:42 | The emulator's Samsung certificate: Rebecca's existing Samsung account; she signs in once on this PC herself (replaces 18:40's new account). |
+| 2026-11-04 19:30 | One region on Samsung: ignore the multiple-regions work; when `packages/core` takes the offers, Samsung uses the single-region path. |
+| 2026-11-04 19:3x | Any feature that may not work on Samsung goes to Rebecca as a question before it's worked around or dropped: (a) research more, or (b) don't port it. |
+| 2026-11-04 19:36 | Research now: opening the title from Watch on, the TV-side pages (phone notes, the key page), in-app updates. After the first call: the Home key going straight to HomeTV, opening at power-on. The phone remote on Samsung: back burner. |
 
 ## Next
 
