@@ -1,0 +1,26 @@
+{
+  "name": "hometv-tizen",
+  "version": "0.0.1",
+  "private": true,
+  "description": "HomeTV for Samsung (Tizen) TVs: a TizenBrew application module. Spike.",
+  "license": "MIT",
+  "type": "module",
+  "packageType": "app",
+  "appName": "HomeTV",
+  "appPath": "dist/index.html",
+  "serviceFile": "service/service.js",
+  "keys": ["ColorF0Red", "ColorF1Green", "ColorF2Yellow", "ColorF3Blue", "Info"],
+  "files": ["dist", "service/service.js"],
+  "scripts": {
+    "dev": "node tools/dev.mjs",
+    "service": "node tools/dev-service.mjs",
+    "build": "tsc --noEmit -p app && vite build && node tools/check-legacy.mjs",
+    "check": "node tools/check-legacy.mjs",
+    "test": "node --test tests/"
+  },
+  "devDependencies": {
+    "acorn": "^8.14.0",
+    "typescript": "^5.6.0",
+    "vite": "^6.0.0"
+  }
+}
