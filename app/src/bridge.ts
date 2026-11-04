@@ -9,6 +9,7 @@
 import { HOME_APPS, keyForName } from './apps';
 import { appControl, pageChecks } from './pageChecks';
 import type { OpenPlan } from './titleLinks';
+import { platform } from './platform';
 
 export const SERVICE = 'http://127.0.0.1:8766';
 
@@ -117,6 +118,8 @@ function installedFor(key: string, name?: string): AeroApp | null {
 }
 
 export const bridge = {
+  /** Keys, buttons, names, online state and the key page's TV side (platform.ts, docs/platform.md). */
+  platform,
   mode: () => mode,
   /** Why the TV's functions weren't found, for the screen (empty when they were). */
   problem: () => problem,

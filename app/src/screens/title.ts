@@ -6,6 +6,7 @@
 // catalogue is on the TV. The art is the poster: the mock catalogue has no landscape art on Samsung (data/posters.ts).
 
 import { SERVICES } from '@hometv/core/services.ts';
+import { bridge } from '../bridge';
 import type { ServiceId, Title } from '@hometv/core/types.ts';
 import { TITLES } from '../data/catalog';
 import {
@@ -46,7 +47,7 @@ export function similar(t: Title): Title[] {
     .map((x) => x.o);
 }
 
-const isOffline = () => navigator.onLine === false;
+const isOffline = () => !bridge.platform.online();
 
 /** The title page. `moreLike` opens it on More like this, with focus on that tab. */
 export function titlePage(t: Title, opts: { moreLike?: boolean } = {}): Screen {

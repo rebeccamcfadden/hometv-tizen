@@ -88,10 +88,10 @@ test('launch by id opens an app All apps lists, and nothing else', async () => {
   assert.equal(dev.calls.filter((c, i) => i >= before && c.fn === 'launch').length, 0);
 });
 
-test('info reports model, Tizen and Node versions', async () => {
+test('info reports model, OS and Node versions', async () => {
   const r = await post('/check/info', {});
   assert.equal(r.ok, true);
-  assert.equal(r.detail.tizen, '5.0');
+  assert.equal(r.detail.osVersion, '5.0');
   assert.match(r.detail.node, /^v\d+/);
 });
 

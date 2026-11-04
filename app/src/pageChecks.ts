@@ -152,7 +152,7 @@ export const pageChecks = {
       const chrome = /Chrome\/(\d+)/.exec(navigator.userAgent);
       return record(label, true, {
         model: capability('http://tizen.org/system/model_name'),
-        tizen: capability('http://tizen.org/feature/platform.version'),
+        osVersion: capability('http://tizen.org/feature/platform.version'),
         chromium: chrome ? Number(chrome[1]) : null,
         mode: 'own app',
       });

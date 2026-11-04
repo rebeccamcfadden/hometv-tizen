@@ -243,13 +243,13 @@ var CHECKS = {};
 CHECKS.info = function (params, cb) {
   var info = {
     model: hasTizen() ? capability('http://tizen.org/system/model_name') : null,
-    tizen: hasTizen() ? capability('http://tizen.org/feature/platform.version') : null,
+    osVersion: hasTizen() ? capability('http://tizen.org/feature/platform.version') : null,
     node: process.version,
     serviceVersion: VERSION,
     serviceStartedAt: new Date(STARTED_AT).toISOString(),
     serviceUpMinutes: Math.round((Date.now() - STARTED_AT) / 60000)
   };
-  cb(!!info.tizen, info);
+  cb(!!info.osVersion, info);
 };
 
 /** Does the TV list its installed apps for TizenBrew? Which known ids are among them? */

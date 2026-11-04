@@ -16,11 +16,14 @@ const stage = document.getElementById('stage') as HTMLElement;
 
 const home = homeScreen();
 
+const { keys, buttons } = bridge.platform;
+shell.keys = keys;
 shell.extraKeys = {
-  406: showChecks, // Blue
-  457: showChecks, // Info
+  [buttons.blue]: showChecks,
+  [buttons.info]: showChecks,
   67: showChecks, // C on a PC keyboard
 };
+bridge.platform.registerButtons(['blue', 'info']);
 
 async function start() {
   bridge.setToast((text) => shell.toast(text, /didn’t|refused|failed/i.test(text)));
@@ -34,9 +37,7 @@ async function start() {
     search: searchScreen,
   });
   const homeShownMs = Date.now() - t0;
-  // Tells the installed app's loader (app/loader/boot.js) this page works; its updater may then look for a newer one.
-  const boot = (window as unknown as { HomeTVBoot?: { started(): void } }).HomeTVBoot;
-  if (boot) boot.started();
+  bridge.platform.started();
   if (bridge.mode() === 'app') shell.toast(`Home in ${homeShownMs} ms · ${(/Chrome\/(\d+)/.exec(navigator.userAgent) || ['', '?'])[1]}`);
   if (bridge.mode() === 'tv' || bridge.mode() === 'fake-tv') {
     bridge.check('timing', {

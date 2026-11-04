@@ -13,7 +13,7 @@ import { showChecks } from './checks';
 import { showKeys } from './keys';
 
 const MODE_TEXT = {
-  app: 'Samsung app',
+  app: `${bridge.platform.brand} app`,
   tv: 'On the TV (TizenBrew)',
   'fake-tv': 'Fake TV on this PC',
   preview: 'Preview: no TV, apps don’t open',

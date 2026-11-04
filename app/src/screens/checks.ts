@@ -29,8 +29,8 @@ const CHECKS: CheckDef[] = [
 
 export function summary(r: Result): string {
   const d = r.detail as Record<string, unknown>;
-  if (r.check === 'info' && d && d.mode === 'own app') return `${d.model || '?'} · Tizen ${d.tizen || '?'} · Chromium ${d.chromium || '?'}`;
-  if (r.check === 'info' && d) return `${d.model || '?'} · Tizen ${d.tizen || '?'} · Node ${d.node} · up ${d.serviceUpMinutes} min`;
+  if (r.check === 'info' && d && d.mode === 'own app') return `${d.model || '?'} · ${bridge.platform.os} ${d.osVersion || '?'} · Chromium ${d.chromium || '?'}`;
+  if (r.check === 'info' && d) return `${d.model || '?'} · ${bridge.platform.os} ${d.osVersion || '?'} · Node ${d.node} · up ${d.serviceUpMinutes} min`;
   if (r.check === 'apps' && d) return r.ok ? `${d.count} apps listed; known: ${Object.keys((d.known as object) || {}).join(', ') || 'none'}` : `not listed: ${d.error}`;
   if (r.check === 'phone' && d) return r.ok ? `yes, ${d.visits} visit(s)` : 'not yet: open the link on the phone first';
   if (r.check === 'timing' && d) return `Home in ${d.homeShownMs} ms · Chromium ${d.chromium || '?'} · ${d.screen}`;

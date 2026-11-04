@@ -7,6 +7,7 @@
 // (Samsung has no account yet; the mock catalogue is on the TV). Offline comes from the browser's own online state.
 
 import type { Hit } from '@hometv/core/fuzzy.ts';
+import { bridge } from '../bridge';
 import type { Title } from '@hometv/core/types.ts';
 import { byId } from '../data/catalog';
 import { store } from '../data/store';
@@ -21,23 +22,8 @@ import { BROWSE_GENRES, FILTERS, filterLabel, KEY_ROWS, resultItems, runSearch, 
 import { titlePage } from './title';
 import './search.css';
 
-const isOffline = () => navigator.onLine === false;
+const isOffline = () => !bridge.platform.online();
 
-/** The remote's number keys reach the page only once registered (Samsung's TVInputDevice API). */
-let digitsAsked = false;
-function registerDigits() {
-  if (digitsAsked) return;
-  digitsAsked = true;
-  const t = (window as unknown as { tizen?: { tvinputdevice?: { registerKey(name: string): void } } }).tizen;
-  if (!t || !t.tvinputdevice) return;
-  for (const d of '0123456789'.split('')) {
-    try {
-      t.tvinputdevice.registerKey(d);
-    } catch (e) {
-      // This TV has no such key (a remote without numbers): the on-screen keyboard has them.
-    }
-  }
-}
 
 export function searchScreen(): Screen {
   let query = '';
@@ -308,7 +294,7 @@ export function searchScreen(): Screen {
     // On the full results the keyboard is hidden, so focus that loses its card lands on a result or the bar.
     defaultFocus: () => (expanded ? firstResult() : (keyboard.querySelector('[data-default]') as HTMLElement | null)),
     onShow() {
-      registerDigits();
+      bridge.platform.registerButtons(['digits']);
       if (!snap) return render();
       snap = false;
       el.classList.add('is-snapping');

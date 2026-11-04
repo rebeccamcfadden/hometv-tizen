@@ -1,5 +1,5 @@
-// The screen stack, layers, Back, focus and keys, from design_preview's core/app.ts, for Samsung's remote and
-// Chromium 56. Screens are modules that build an element and say how they handle keys; the shell does the rest.
+// The screen stack, layers, Back, focus and keys, from design_preview's core/app.ts, for a TV remote and
+// Chromium 56. The TV's key codes come from the platform (bridge.platform.keys); nothing here is Samsung's. Screens are modules that build an element and say how they handle keys; the shell does the rest.
 // Left out from design_preview: the phone remote (on the back burner on Samsung, Rebecca 19:36) and the import pill.
 
 import { h } from './dom';
@@ -43,17 +43,6 @@ export const STAGE_H = 1080;
 /** How long OK is held before it opens a hold-OK menu, as Android's long press. */
 const HOLD_MS = 500;
 
-/** Samsung's remote (Samsung's TVInputDevice docs) and a PC keyboard standing in for it. */
-const KEYS: Record<number, Key> = {
-  37: 'left',
-  38: 'up',
-  39: 'right',
-  40: 'down',
-  13: 'ok',
-  10009: 'back', // Return on the Samsung remote
-  27: 'back', // Esc
-  8: 'back', // Backspace
-};
 
 const onScreen = (el: HTMLElement | null | undefined) => !!el && document.body.contains(el) && el.getClientRects().length > 0;
 
@@ -82,6 +71,8 @@ class Shell {
   private okScreen: Screen | null = null;
   /** A hold-OK the top screen didn't take, offered on any screen (the title menu on a title card). */
   longOk: ((focused: HTMLElement) => boolean) | null = null;
+  /** The remote's arrows, OK and Back by keyCode, from the platform (bridge.platform.keys), set by main.ts. */
+  keys: Record<number, Key> = { 37: 'left', 38: 'up', 39: 'right', 40: 'down', 13: 'ok', 27: 'back' };
   /** Other remote keys by keyCode (colour keys, Info), set by main.ts. */
   extraKeys: Record<number, () => void> = {};
 
@@ -293,7 +284,7 @@ class Shell {
     const target = e.target as HTMLElement | null;
     if (target && /^(INPUT|SELECT|TEXTAREA)$/.test(target.tagName)) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    const key = KEYS[e.keyCode];
+    const key = this.keys[e.keyCode];
     const s = this.top();
     if (key === 'ok') {
       // As on Android, OK acts when it's let go, unless it was held long enough to open a hold-OK menu instead.
@@ -324,7 +315,7 @@ class Shell {
   }
 
   private onKeyUp(e: KeyboardEvent) {
-    if (KEYS[e.keyCode] !== 'ok' || !this.okDown) return;
+    if (this.keys[e.keyCode] !== 'ok' || !this.okDown) return;
     e.preventDefault();
     this.okDown = false;
     clearTimeout(this.okTimer);

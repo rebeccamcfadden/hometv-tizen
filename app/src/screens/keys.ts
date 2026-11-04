@@ -14,6 +14,9 @@ import { shell, type Screen } from '../shell/app';
 import { encodeQr, dark } from '../qr';
 import { KEY_INFO, keyStatus, keysValue, type KeyEntry, type KeyId } from '@hometv/core/keys.ts';
 import { topBar } from './home';
+import { bridge } from '../bridge';
+
+const keyPages = bridge.platform.keyPages;
 
 /** The service's port on the TV. */
 const TV_PORT = 8766;
@@ -22,7 +25,6 @@ const TV_PORT = 8766;
  * the TV: another program could listen there and collect the token the screen sends.
  */
 const DEV_PORT = 8767;
-const SERVICE_ID = 'HmTvSpike0.HomeTVPages';
 /** Under the service's own hold (15 s), so a slow answer never lets the routes close while the screen shows. */
 const HOLD_EVERY_MS = 3000;
 
@@ -40,27 +42,6 @@ interface Ping {
   ok: boolean;
   service?: string;
 }
-
-type Tz = {
-  ApplicationControl: new (operation: string) => unknown;
-  application: { launchAppControl(c: unknown, id: string, ok: null, err: null): void };
-  systeminfo?: {
-    getPropertyValue(p: string, ok: (v: { ipAddress?: string }) => void, err?: () => void): void;
-  };
-  filesystem?: {
-    /** Tizen 5.0 and newer. */
-    openFile?(path: string, mode: 'r'): { readString(): string; close(): void };
-    /** Older, and deprecated from Tizen 5.0. */
-    resolve?(path: string, ok: (f: TizenFile) => void, err: () => void, mode: 'r'): void;
-  };
-};
-interface TizenFile {
-  readAsText(ok: (text: string) => void, err: () => void, encoding: string): void;
-}
-
-/** The service's TOKEN_FILE, in the app's private folder (service/pages.js). */
-const TOKEN_FILE = 'wgt-private/hometv-pages-tv-token';
-const tz = (): Tz | null => (window as unknown as { tizen?: Tz }).tizen || null;
 
 type HttpError = Error & { status?: number };
 
@@ -92,46 +73,6 @@ function request<T>(base: string, method: 'GET' | 'POST', path: string, body?: u
   });
 }
 
-/**
- * The screen's token: on the TV from the app's private folder, which only HomeTV can read; on a PC (`npm run dev`)
- * from the dev server, which has it from the service it started. "" when it can't be read.
- */
-function readToken(): Promise<string> {
-  const t = tz();
-  const fsys = t && t.filesystem;
-  if (!fsys) {
-    return new Promise((resolve) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', '/__hometv/pages-token');
-      xhr.timeout = 1500;
-      xhr.onload = () => resolve(xhr.status === 200 ? xhr.responseText.trim() : '');
-      xhr.onerror = xhr.ontimeout = () => resolve('');
-      xhr.send();
-    });
-  }
-  if (fsys.openFile) {
-    try {
-      const file = fsys.openFile(TOKEN_FILE, 'r');
-      try {
-        return Promise.resolve(file.readString().trim());
-      } finally {
-        file.close();
-      }
-    } catch (e) {
-      // Not there yet, or this TV only has the older calls below.
-    }
-  }
-  return new Promise((resolve) => {
-    if (!fsys.resolve) return resolve('');
-    try {
-      fsys.resolve(TOKEN_FILE, (f) => f.readAsText((text) => resolve(String(text || '').trim()), () => resolve(''), 'UTF-8'), () => resolve(''), 'r');
-    } catch (e) {
-      resolve('');
-    }
-    setTimeout(() => resolve(''), 2000);
-  });
-}
-
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -141,7 +82,7 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function findService(): Promise<{ base: string } | { problem: string }> {
   let taken = false;
   for (let attempt = 0; attempt < 6; attempt++) {
-    for (const port of tz() ? [TV_PORT] : [TV_PORT, DEV_PORT]) {
+    for (const port of keyPages.onTv() ? [TV_PORT] : [TV_PORT, DEV_PORT]) {
       const base = `http://127.0.0.1:${port}`;
       try {
         const p = await request<Ping>(base, 'GET', '/ping', undefined, 1200);
@@ -151,39 +92,16 @@ async function findService(): Promise<{ base: string } | { problem: string }> {
         // Not there.
       }
     }
-    const t = tz();
-    if (!t) break;
-    if (attempt === 0) {
-      try {
-        t.application.launchAppControl(new t.ApplicationControl('http://tizen.org/appcontrol/operation/service'), SERVICE_ID, null, null);
-      } catch (e) {
-        // Not this app's package (TizenBrew): the module has no pages service.
-      }
-    }
+    if (!keyPages.onTv()) break;
+    if (attempt === 0) keyPages.start();
     await wait(800);
   }
   if (taken) return { problem: 'Another service holds port 8766 (HomeTV’s TizenBrew module?), so the key page can’t open. Close it and try again.' };
   return {
-    problem: tz()
+    problem: keyPages.onTv()
       ? 'HomeTV’s key service didn’t start. Back, then open API keys again; if it still fails, restart the TV.'
       : 'Preview: no TV here. On the TV, or with `npm run dev`, this shows the QR for the key page.',
   };
-}
-
-/** The TV's address from the TV itself, when the service can't list its own (Tizen's systeminfo). */
-function tizenAddress(): Promise<string> {
-  const t = tz();
-  if (!t || !t.systeminfo) return Promise.resolve('');
-  const read = (prop: string) =>
-    new Promise<string>((resolve) => {
-      try {
-        t.systeminfo!.getPropertyValue(prop, (v) => resolve((v && v.ipAddress) || ''), () => resolve(''));
-      } catch (e) {
-        resolve('');
-      }
-      setTimeout(() => resolve(''), 1500);
-    });
-  return read('WIFI_NETWORK').then((ip) => ip || read('ETHERNET_NETWORK'));
 }
 
 /** The address the QR holds: the page, with the code after the # so the phone keeps it to itself. */
@@ -264,7 +182,7 @@ export function showKeys() {
     const addr = (state.addresses && state.addresses[0]) || fallbackAddress;
     if (!addr && !askedTv) {
       askedTv = true;
-      tizenAddress().then((ip) => {
+      keyPages.address().then((ip) => {
         fallbackAddress = ip;
         if (ip && alive) paint();
       });
@@ -306,7 +224,7 @@ export function showKeys() {
     } catch (e) {
       if ((e as HttpError).status !== 403 || !accepted) throw e;
       accepted = false;
-      token = await readToken();
+      token = await keyPages.token();
       return tvCall(path, body);
     }
   }
@@ -381,7 +299,7 @@ export function showKeys() {
     if (!alive) return;
     if ('problem' in found) return problem(found.problem);
     base = found.base;
-    readToken().then((t) => {
+    keyPages.token().then((t) => {
       token = t;
       if (!alive) return;
       note.textContent = '';

@@ -11,6 +11,7 @@
 // bar are left out (F46's poster card was chosen); Pick for me (screens/pick.ts) isn't in this port.
 
 import './library.css';
+import { bridge } from '../bridge';
 import type { Kind, Title } from '@hometv/core/types.ts';
 import { TITLES } from '../data/catalog';
 import { lists } from '../data/lists';
@@ -43,7 +44,7 @@ const listName = (l: ListChoice) => {
 /** F2: an hour away, the page starts again with no filters, All lists and A–Z. */
 const AWAY_MS = 60 * 60 * 1000;
 
-const isOffline = () => navigator.onLine === false;
+const isOffline = () => !bridge.platform.online();
 const isDir = (k: Key): k is 'up' | 'down' | 'left' | 'right' => k === 'up' || k === 'down' || k === 'left' || k === 'right';
 
 export function libraryScreen(kind: Kind): Screen {
