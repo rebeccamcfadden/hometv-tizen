@@ -85,7 +85,7 @@ this link. It takes <strong>about 40 minutes</strong>.</p>
     <strong>Copy this command, paste it into PowerShell, and press Enter.</strong>
     Press <em>Copy</em>, then click into the PowerShell window and right-click (that pastes), then press <kbd>Enter</kbd>.
     It downloads the tool, checks that it's exactly the right file, unpacks it into a folder of its own and starts it.
-    <div class="cmd"><pre id="cmd-run">$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol='Tls12'; $z="$env:TEMP\HomeTV-Check-Windows.zip"; Invoke-WebRequest -UseBasicParsing 'https://github.com/rebeccamcfadden/hometv-tizen/releases/download/check-samsung-v1/HomeTV-Check-Windows.zip' -OutFile $z; if ((Get-FileHash $z -Algorithm SHA256).Hash -ne '<!--sha:zip-->not-released-yet<!--/sha:zip-->') { Write-Host 'This is not the expected file. Stop here and tell the person who sent you the link.' -ForegroundColor Red } else { Expand-Archive $z $env:LOCALAPPDATA -Force; &amp; "$env:LOCALAPPDATA\HomeTV-Check\python\python.exe" "$env:LOCALAPPDATA\HomeTV-Check\app\hometv_check.py" }</pre><button type="button" data-copy="cmd-run">Copy</button></div>
+    <div class="cmd"><pre id="cmd-run">$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol='Tls12'; $z="$env:TEMP\HomeTV-Check-Windows.zip"; Invoke-WebRequest -UseBasicParsing 'https://github.com/rebeccamcfadden/hometv-tizen/releases/download/check-samsung-v1/HomeTV-Check-Windows.zip' -OutFile $z; if ((Get-FileHash $z -Algorithm SHA256).Hash -ne '<!--sha:zip-->6d5d26924c378f566db5c7c0ee782fc0ec746b744ae0b280807ffceb121ce20f<!--/sha:zip-->') { Write-Host 'This is not the expected file. Stop here and tell the person who sent you the link.' -ForegroundColor Red } else { Expand-Archive $z $env:LOCALAPPDATA -Force; &amp; "$env:LOCALAPPDATA\HomeTV-Check\python\python.exe" "$env:LOCALAPPDATA\HomeTV-Check\app\hometv_check.py" }</pre><button type="button" data-copy="cmd-run">Copy</button></div>
     <p class="small">If you'd rather not paste a command: download <code>HomeTV-Check-Windows.zip</code> from the
       <a href="https://github.com/rebeccamcfadden/hometv-tizen/releases/tag/check-samsung-v1">release page</a>, open your
       Downloads folder, right-click the file, choose <em>Extract All…</em>, then <em>Extract</em>. In the folder that
@@ -211,9 +211,9 @@ this link. It takes <strong>about 40 minutes</strong>.</p>
 <table>
   <tr><th>File</th><th>What it is</th><th>SHA-256</th></tr>
   <tr><td><code>HomeTV-Check-Windows.zip</code></td><td>The tool: Python (python.org's own build), AeroTizen's tool, the
-    check, and the check app</td><td><code><!--sha:zip-->not-released-yet<!--/sha:zip--></code></td></tr>
+    check, and the check app</td><td><code><!--sha:zip-->6d5d26924c378f566db5c7c0ee782fc0ec746b744ae0b280807ffceb121ce20f<!--/sha:zip--></code></td></tr>
   <tr><td><code>HomeTV-Check-App.wgt</code></td><td>The check app on its own, unsigned (the tool signs it for your
-    TV)</td><td><code><!--sha:wgt-->not-released-yet<!--/sha:wgt--></code></td></tr>
+    TV)</td><td><code><!--sha:wgt-->a2a0d50c3c82c5452b3cc6d678dba74b3e69196fe463e20f96976cde72e10b94<!--/sha:wgt--></code></td></tr>
   <tr><td><code>SHA256SUMS.txt</code></td><td>Both SHA-256s</td><td></td></tr>
 </table>
 
