@@ -320,8 +320,14 @@ for (const api of ['openFile', 'resolve']) {
     assert.equal(two.reloaded, 0);
     await two.tick(1000);
     assert.equal(two.reloaded, 1, 'reloads after 30 s without Home');
-    assert.deepEqual(two.state().skip, ['1.2.0']);
+    assert.deepEqual(two.state().skip, [], 'one failed start: not skipped yet');
     two.stop();
+
+    const again = await start(tv, 30000);
+    assert.equal(again.win.shown, '1.2.0', 'a second chance');
+    assert.equal(again.reloaded, 1);
+    assert.deepEqual(again.state().skip, ['1.2.0'], 'two failed starts in a row: skipped');
+    again.stop();
 
     const three = await start(tv, 11000);
     assert.equal(three.win.shown, '1.1.0', 'back to the previous good page');
@@ -330,20 +336,39 @@ for (const api of ['openFile', 'resolve']) {
     assert.deepEqual(three.errors, []);
   });
 
-  test(`${api}: a start that dies before Home (power off, crash) goes back at the next start`, async () => {
+  test(`${api}: a new page that dies before Home twice (power off, crash) goes back at the next start`, async () => {
     const { tv, srv } = makeTv(api);
     srv.offer = release('1.1.0', { starts: false });
     (await start(tv, 11000)).stop();
     const crashed = await start(tv);
     assert.equal(crashed.win.shown, '1.1.0');
     crashed.stop(); // no timer, no started(): the TV went off
+    const second = await start(tv);
+    assert.equal(second.win.shown, '1.1.0', 'one strike: tried again');
+    assert.equal(second.status().note, "page 1.1.0 didn't start last time");
+    assert.deepEqual(second.state().skip, []);
+    second.stop();
     const next = await start(tv);
     assert.equal(next.win.shown, 'bundled');
-    assert.equal(next.status().note, "page 1.1.0 didn't start last time");
     assert.deepEqual(next.state().skip, ['1.1.0']);
   });
 
-  test(`${api}: a once-good page gets a second chance, then is dropped`, async () => {
+  test(`${api}: a new page switched off once in its first seconds still becomes the good page`, async () => {
+    const { tv, srv } = makeTv(api);
+    srv.offer = release('1.1.0');
+    (await start(tv, 11000)).stop(); // downloaded
+    const dies = { before: (ctx) => (ctx.holdStart = true) };
+    const off = await start(tv, 0, dies);
+    assert.equal(off.win.shown, '1.1.0');
+    off.stop(); // the TV goes off before Home
+    const on = await start(tv);
+    assert.equal(on.win.shown, '1.1.0');
+    assert.equal(on.state().good, '1.1.0');
+    assert.deepEqual(on.state().skip, []);
+    assert.deepEqual(plain(on.state().fails), { '1.1.0': 0 }, 'a good start clears the strike');
+  });
+
+  test(`${api}: a once-good page also gets a second chance, then is dropped`, async () => {
     const { tv, srv } = makeTv(api);
     srv.offer = release('1.1.0');
     (await start(tv, 11000)).stop();

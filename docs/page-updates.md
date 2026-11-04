@@ -49,12 +49,16 @@ The TV keeps **at most two** downloaded pages: the one in use and one more (the 
 
 ### When a new page fails
 
-A new page has 30 seconds to reach Home. If it doesn't (it hangs, throws, or the TV goes off first):
+A new page has 30 seconds to reach Home. If it doesn't (it hangs, throws, or the TV goes off first), that start
+counts as failed; after 30 seconds the app reloads. One failed start isn't enough to drop a page: people switch a TV
+off in the first seconds. So:
 
-- after 30 seconds the app reloads; at the next start it uses the previous good page (or the app's own);
-- that version is **skipped** from then on: it's never shown or downloaded again. Fix it as a new version.
+- after the **first** failed start, the next start tries the same page again;
+- after **two failed starts in a row**, the next start uses the previous good page (or the app's own), and that
+  version is **skipped** from then on: it's never shown or downloaded again. Fix it as a new version.
 
-A page that once worked gets a second chance: it is skipped after two failed starts in a row.
+A start that reaches Home clears the count. The same goes for a page that once worked. A page that hangs costs two
+waits of 30 seconds before the TV goes back.
 
 If a downloaded page's files are missing or damaged on the TV, the app uses the next best page at once, in the same
 start. If the TV refuses inline scripts, downloaded pages are switched off for that app version and it keeps its own.
@@ -96,7 +100,7 @@ before, so raise `package.json`'s version too.
 
 ## Undoing a page
 
-- **It doesn't start:** nothing to do. The TV goes back by itself and skips that version.
+- **It doesn't start:** nothing to do. After two failed starts the TV goes back by itself and skips that version.
 - **It starts but is wrong:** release the previous code again **with a higher version number** (check out the
   older code, raise the version past the bad one, build, release). TVs never go back to a lower number.
 - **Everything off:** take `manifest.json` off the server. TVs keep the page they have and stop changing.

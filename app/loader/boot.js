@@ -3,8 +3,9 @@
 // - a page the updater downloaded and checked (in the app's private storage, wgt-private/pages/<version>/), read
 //   through tizen.filesystem and injected inline, so the app never navigates to a file:// page; or
 // - the page that came inside the app (dist/), when there is none, it fails, or the TV can't run it.
-// The page calls HomeTVBoot.started() once Home shows. A downloaded page that doesn't is dropped: the next start
-// (or a reload after START_TIMEOUT_MS) goes back to the previous good page. docs/page-updates.md explains it.
+// The page calls HomeTVBoot.started() once Home shows. A downloaded page that doesn't, in two starts in a row (each
+// ended by the TV going off, a crash, or a reload after START_TIMEOUT_MS), is dropped: the next start goes back to
+// the previous good page. docs/page-updates.md explains it.
 (function (win) {
   "use strict";
 
@@ -16,6 +17,7 @@
   var UPDATE_DELAY_MS = SHELL.updateDelayMs == null ? 10000 : SHELL.updateDelayMs;
   var CHECK_EVERY_MS = (SHELL.checkHours || 12) * 3600000;
   var SKIP_KEEP = 20;
+  var STRIKES = 2;
   var BUNDLED = SHELL.page || { version: "0.0.0", entry: { css: [], js: [], body: "" } };
 
   // Where the installed page lives (absolute), captured before a downloaded page sets <base>.
@@ -128,10 +130,13 @@
     }
   }
 
-  /** A start of page v didn't reach started(): a new page is skipped at once, a once-good one after two. */
+  /**
+   * A start of page v didn't reach started(). Any page, new or once good, is skipped after two such starts in a row
+   * (a good start clears the count): people switch a TV off in the first seconds, and one would skip a good page.
+   */
   function failedStart(s, v) {
     s.fails[v] = (s.fails[v] || 0) + 1;
-    if (v !== s.good || s.fails[v] >= 2) {
+    if (s.fails[v] >= STRIKES) {
       skipVersion(s, v);
     }
     s.trying = null;
