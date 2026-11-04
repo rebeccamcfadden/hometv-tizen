@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- HomeTV as its own Samsung app (Rebecca, 2026-11-04 18:35), on AeroTizen's base: HomeTV's page (dist/) with
      AeroTizen's ES5 platform scripts (dist/aero/), and AeroTizen's Home watcher as the background service
-     (aero/service/, copied unmodified by tools/package-tizen.mjs except its app id and port). The spike's id. -->
+     (aero/service/, copied unmodified by tools/package-tizen.mjs except its app id and port). A second service,
+     HomeTVPages (service/pages.js and keys-page.html, copied to pages/), serves the API keys page a phone opens from
+     the TV's QR. The spike's id. -->
 <widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="https://github.com/rebeccamcfadden/hometv-tizen" version="0.0.2" viewmodes="maximized">
     <name>HomeTVSpike</name>
     <content src="dist/index.html"/>
@@ -14,6 +16,11 @@
         <tizen:content src="aero/service/index.js"/>
         <tizen:name>HomeTVWatcher</tizen:name>
         <tizen:description>Brings HomeTV back when Home is pressed inside an app (AeroTizen's watcher)</tizen:description>
+    </tizen:service>
+    <tizen:service id="HmTvSpike0.HomeTVPages" on-boot="true" auto-restart="true">
+        <tizen:content src="pages/pages.js"/>
+        <tizen:name>HomeTVPages</tizen:name>
+        <tizen:description>The API keys page a phone opens from the TV's QR (port 8766, home network only; service/pages.js)</tizen:description>
     </tizen:service>
     <feature name="http://tizen.org/feature/screen.size.all"/>
     <tizen:profile name="tv-samsung"/>

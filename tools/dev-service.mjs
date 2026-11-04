@@ -1,6 +1,6 @@
 // Runs service/service.js the way TizenBrew does (its serviceLauncher.js: a vm context holding Node's globals,
-// `require`, `module` and `tizen`), with the fake TV from mock-tizen.mjs and fake Samsung servers. Used by
-// `npm run service`, `npm run dev` and the tests.
+// `require`, `module` and `tizen`), with the fake TV from mock-tizen.mjs and fake Samsung servers; and the own app's
+// pages service (service/pages.js) beside it. Used by `npm run service`, `npm run dev` and the tests.
 
 import vm from 'node:vm';
 import fs from 'node:fs';
@@ -9,6 +9,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { createMockTizen } from './mock-tizen.mjs';
 import { startFakeDial, startFakeRemote } from './fake-samsung.mjs';
+import { startFakeKeyChecks } from './fake-keys.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -54,7 +55,54 @@ export async function startDevService({ port = 8766, dataDir = path.join(root, '
   };
 }
 
+/**
+ * HomeTV's pages service (service/pages.js, the own app's second service): the API keys page. On the TV it has 8766;
+ * on a PC the module's service above holds that, so it takes 8767 (the TV's screen looks on both). Its keys are
+ * checked by fake services (tools/fake-keys.mjs: "good" in a key works, "offline" can't be reached), and kept in
+ * `dataDir` instead of the app's private folder. The page on http://localhost may use its TV routes.
+ */
+export async function startDevPages({ port = 8767, dataDir = path.join(root, '.data'), now, log = () => {}, testAddresses = false, requestDeadlineMs } = {}) {
+  const checks = await startFakeKeyChecks({ log });
+  const pages = createRequire(import.meta.url)('../service/pages.js');
+  const instance = pages.create({ port, dataDir, now, checkBase: checks.base, devOrigins: true, testAddresses, requestDeadlineMs });
+  await new Promise((resolve, reject) => instance.start((e) => (e ? reject(e) : resolve())));
+  return {
+    port: instance.port(),
+    checks,
+    instance,
+    pages,
+    close() {
+      instance.stop();
+      checks.server.close();
+    },
+  };
+}
+
+/**
+ * The dev page's way to the pages service's token (on the TV the screen reads it from the app's private folder):
+ * GET /__hometv/pages-token on the dev server. Same-origin only: another site in the PC's browser can't read it.
+ */
+export function pagesTokenPlugin(pages) {
+  return {
+    name: 'hometv-pages-token',
+    configureServer(server) {
+      server.middlewares.use('/__hometv/pages-token', (req, res) => {
+        // Before Vite's own CORS answer, so no other site may read it; and only by the PC's own name (no rebinding).
+        if (!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(String(req.headers.host || ''))) {
+          res.statusCode = 403;
+          return res.end();
+        }
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(pages.instance.tvToken());
+      });
+    },
+  };
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const dev = await startDevService({ log: (s) => console.log(`[fake TV] ${s}`) });
   console.log(`HomeTV service (fake TV) on http://127.0.0.1:${dev.port}  · report: http://127.0.0.1:${dev.port}/report`);
+  const pages = await startDevPages({ log: (s) => console.log(`[fake TV] ${s}`) });
+  console.log(`HomeTV pages service on :${pages.port}  · key page: http://127.0.0.1:${pages.port}/keys`);
 }

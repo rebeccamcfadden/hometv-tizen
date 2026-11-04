@@ -198,6 +198,111 @@ button {
   color: #ffb3a7;
 }
 
+/* API keys (screens/keys.ts): the QR on the left, the address, code and each key's state on the right. */
+.keyslead {
+  font-size: 24px;
+  color: #aab6cf;
+  margin: 16px 0 28px;
+  max-width: 1500px;
+}
+.keycols {
+  display: flex;
+  align-items: flex-start;
+}
+.qrbox {
+  width: 440px;
+  height: 440px;
+  margin-right: 64px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #1c2740;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qrbox .qr {
+  display: block;
+  width: 440px;
+  height: 440px;
+}
+.qrnone {
+  padding: 32px;
+  font-size: 24px;
+  color: #ffd27f;
+}
+.keyside {
+  flex: 1;
+}
+.keylabel {
+  font-size: 20px;
+  color: #7f8aa3;
+}
+.keyaddr {
+  font-size: 34px;
+  margin: 4px 0 12px;
+}
+.keycode {
+  font-size: 52px;
+  font-weight: 600;
+  letter-spacing: 6px;
+  margin: 2px 0 16px;
+}
+.keysvalue {
+  font-size: 22px;
+  color: #aab6cf;
+  margin-bottom: 8px;
+}
+.keysvalue.warn {
+  color: #ffd27f;
+}
+.keyrow {
+  display: block;
+  width: 1100px;
+  text-align: left;
+  padding: 12px 20px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: #151e33;
+}
+.keyrow.is-focused {
+  background: #24324f;
+  box-shadow: 0 0 0 3px #b9d4ff;
+}
+.keyname {
+  font-size: 26px;
+  font-weight: 600;
+  margin-right: 16px;
+}
+.keyuse {
+  font-size: 20px;
+  color: #7f8aa3;
+}
+.keystatus {
+  display: block;
+  font-size: 22px;
+  margin-top: 4px;
+}
+.tone-good {
+  color: #9fe3b0;
+}
+.tone-warn {
+  color: #ffd27f;
+}
+.tone-bad {
+  color: #ffb3a7;
+}
+.tone-dim {
+  color: #7f8aa3;
+}
+.keysnote {
+  font-size: 22px;
+  color: #ffd27f;
+  margin: 0;
+}
+.keys .lowerrow {
+  margin-top: 16px;
+}
+
 .toast {
   position: absolute;
   left: 50%;

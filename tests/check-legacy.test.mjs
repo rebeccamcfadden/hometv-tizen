@@ -52,6 +52,8 @@ for (const [what, patch, expect] of [
   [':focus-visible', { 'dist/assets/style.css': '.a:focus-visible { color: red; }' }, /focus-visible/],
   ['matchAll in the page', { 'dist/assets/app.js': 'var a = "x".matchAll(/x/g);' }, /matchAll/],
   ['replaceChildren in the page', { 'dist/assets/app.js': 'document.body.replaceChildren();' }, /replaceChildren/],
+  ['an arrow in the pages service', { 'service/pages.js': 'var f = () => 1;' }, /pages\.js: not ES5/],
+  ['const in the phone page', { 'service/keys-page.html': '<p></p><script>const a = 1;</script>' }, /keys-page\.html: script not ES5/],
 ]) {
   test(`refuses ${what}`, () => {
     const [code, out] = runOn({ ...ok, ...patch });

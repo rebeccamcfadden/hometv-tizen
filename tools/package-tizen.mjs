@@ -2,9 +2,10 @@
 // Samsung certificate profile made on this PC (README › Emulator); neither goes in git.
 // Usage: npm run build && node tools/package-tizen.mjs [--profile <name>]
 //
-// The package holds dist/ (HomeTV's page plus AeroTizen's ES5 scripts in dist/aero/) and AeroTizen's Home watcher
+// The package holds dist/ (HomeTV's page plus AeroTizen's ES5 scripts in dist/aero/), AeroTizen's Home watcher
 // (vendor/aerotizen/launcher/service/ and the three js/ files it requires), copied with only its app id and port
-// changed so it never meets an installed AeroTizen.
+// changed so it never meets an installed AeroTizen, and HomeTV's pages service (service/pages.js and
+// keys-page.html, in pages/).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -42,6 +43,9 @@ for (const f of ['diagnostics.js', 'diagnostics-privacy.js', 'build-info.js']) {
   fs.writeFileSync(path.join(build, 'aero', 'js', f), retarget(fs.readFileSync(path.join(aero, 'js', f), 'utf8')));
 }
 fs.copyFileSync(path.join(root, 'vendor', 'aerotizen', 'LICENSE'), path.join(build, 'aero', 'LICENSE'));
+// HomeTV's pages service (config.xml's HomeTVPages): the API keys page for a phone, as it is in service/.
+fs.mkdirSync(path.join(build, 'pages'), { recursive: true });
+for (const f of ['pages.js', 'keys-page.html']) fs.copyFileSync(path.join(root, 'service', f), path.join(build, 'pages', f));
 
 for (const f of fs.readdirSync(path.join(root, 'tizen'))) if (f.endsWith('.wgt')) fs.rmSync(path.join(root, 'tizen', f));
 execFileSync(`"${cli}"`, ['package', '-t', 'wgt', '-s', profile, '-o', `"${path.join(root, 'tizen')}"`, '--', `"${build}"`], {

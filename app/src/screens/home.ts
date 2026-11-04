@@ -7,6 +7,7 @@ import { h } from '../shell/dom';
 import { focusable } from '../shell/focus';
 import { shell, type Screen } from '../shell/app';
 import { showChecks } from './checks';
+import { showKeys } from './keys';
 
 const MODE_TEXT = {
   app: 'Samsung app',
@@ -77,7 +78,8 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
       for (const app of HOME_APPS) row.appendChild(tile(app, apps ? apps.filter((a) => a.key === app.key)[0] || null : null));
       el.appendChild(row);
       const checks = focusable(h('button.button', 'Checks for the TV call'), { key: 'checks', onOk: showChecks });
-      el.appendChild(h('div.lowerrow', checks, h('span.hint', 'Blue key or Info: Checks · the remote’s Home key leaves HomeTV')));
+      const keys = focusable(h('button.button', 'API keys'), { key: 'keys', onOk: showKeys });
+      el.appendChild(h('div.lowerrow', checks, keys, h('span.hint', 'Blue key or Info: Checks · the remote’s Home key leaves HomeTV')));
       shell.refocus();
     },
   };
