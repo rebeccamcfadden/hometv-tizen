@@ -1,0 +1,4 @@
+# Public keys a downloaded HomeTV page must be signed with: raw Ed25519 keys, base64, one per line.
+# Built into the app (dist/shell-config.js) by `npm run build`; a downloaded page can't change them.
+# Make a key pair with `node tools/page-key.mjs` and paste its public key here. The private key never goes in git.
+# With no key here (and none in env HOMETV_PAGE_KEYS), the app never downloads a page. docs/page-updates.md.

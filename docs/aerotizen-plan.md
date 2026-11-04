@@ -46,7 +46,8 @@ Rebecca's decision (2026-11-04 18:38): build HomeTV for Samsung on [AeroTizen](h
 - **Certificate:** AeroTizen's CLI asks for a Samsung account sign-in on every TV year (TizenBrew only on 2023+).
 - **Size:** AeroTizen's launcher is larger than the spike (Preact, i18n, icons); still small for a TV app.
 - **Updates:** a new HomeTV app means running the CLI again (`aerotizen install`). The cached-page idea
-  ([research.md](research.md#working-without-the-internet)) keeps screen updates off the laptop.
+  ([research.md](research.md#working-without-the-internet)) keeps screen updates off the laptop: built, see
+  [page-updates.md](page-updates.md).
 
 ## The first TV call, given this
 

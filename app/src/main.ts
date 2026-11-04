@@ -32,6 +32,9 @@ async function start() {
     search: () => placeholder('Search'),
   });
   const homeShownMs = Date.now() - t0;
+  // Tells the installed app's loader (app/loader/boot.js) this page works; its updater may then look for a newer one.
+  const boot = (window as unknown as { HomeTVBoot?: { started(): void } }).HomeTVBoot;
+  if (boot) boot.started();
   if (bridge.mode() === 'app') shell.toast(`Home in ${homeShownMs} ms · ${(/Chrome\/(\d+)/.exec(navigator.userAgent) || ['', '?'])[1]}`);
   if (bridge.mode() === 'tv' || bridge.mode() === 'fake-tv') {
     bridge.check('timing', {
