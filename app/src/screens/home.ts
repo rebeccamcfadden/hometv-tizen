@@ -6,6 +6,7 @@ import { bridge, type AppInfo } from '../bridge';
 import { h } from '../shell/dom';
 import { focusable } from '../shell/focus';
 import { shell, type Screen } from '../shell/app';
+import { icon } from '../ui/icons';
 import { navBar } from '../ui/widgets';
 import { showAllApps } from './allApps';
 import { showChecks } from './checks';
@@ -80,11 +81,20 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
   const screen = {
     label: 'Home',
     el,
+    // The first app, not the search button or the nav above it.
     defaultFocus: () => el.querySelector('.approw [data-focus]') as HTMLElement | null,
     setApps(apps: AppInfo[] | null) {
       lastApps = apps;
       while (el.firstChild) el.removeChild(el.firstChild);
-      el.appendChild(topBar('HomeTV'));
+      const bar = topBar('HomeTV');
+      // Search, as design_preview's top bar has it: ↑ from the nav reaches it.
+      const search = focusable(h('button.searchbtn', { 'aria-label': 'Search', html: icon('search', 30) }), {
+        key: 'search',
+        onOk: () => shell.goTab('search'),
+      });
+      const right = bar.querySelector('.topright') as HTMLElement;
+      right.insertBefore(search, right.firstChild);
+      el.appendChild(bar);
       el.appendChild(navBar('home'));
       el.appendChild(h('h2.rowtitle', 'Apps'));
       const row = h('div.approw');

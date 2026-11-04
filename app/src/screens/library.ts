@@ -4,7 +4,7 @@
 // title page.
 //
 // For a weak TV: the grid is drawn only when what it shows changes (a list, a filter, the sort), never on a focus move;
-// D-pad moves inside it go by index (shell/grid.ts); posters load only near the screen (ui/widgets.ts lazyImages).
+// D-pad moves inside it go by index (shell/grid.ts); posters load only near the screen (ui/widgets.ts posterArt).
 //
 // Not here yet, and why: the loading and "offline, nothing saved" states and "needs a TMDB account" wait for the TMDB
 // client and the account (the catalogue is bundled mock data, always there); the card styles of design_preview's dev
@@ -14,18 +14,18 @@ import './library.css';
 import type { Kind, Title } from '@hometv/core/types.ts';
 import { TITLES } from '../data/catalog';
 import { lists } from '../data/lists';
-import { included, rentable, servicesCount } from '../data/offerStandIns';
+import { isOwnIncluded, offersOf, subscribedCount } from '../data/offers';
 import { store } from '../data/store';
 import { shell, type Key, type Screen } from '../shell/app';
 import { h, replace } from '../shell/dom';
 import { columnsOf, gridMove } from '../shell/grid';
 import { icon } from '../ui/icons';
-import { button, chip, guide, lazyImages, miniCard, navBar } from '../ui/widgets';
+import { button, chip, guide, miniCard, navBar } from '../ui/widgets';
 import { dropdown } from './dropdown';
 import { activeCount, applyFilters, defaultFilters, filterDefs, summary } from './filterDefs';
 import { filtersDrawer } from './filters';
 import { recentRanks, SORTS, sortTitles, type SortId } from './librarySort';
-import { openTitle } from './openTitle';
+import { titlePage } from './title';
 
 /** 'all', or a list id from data/lists.ts. */
 type ListChoice = string;
@@ -49,7 +49,8 @@ const isDir = (k: Key): k is 'up' | 'down' | 'left' | 'right' => k === 'up' || k
 export function libraryScreen(kind: Kind): Screen {
   const noun = kind === 'movie' ? 'movies' : 'shows';
   const heading = kind === 'movie' ? 'Movies' : 'TV Shows';
-  const defs = filterDefs(kind, { isSeen: store.isSeen, included, rentable });
+  // The availability filter counts the household's own offers, as design_preview's does (data/offers.ts).
+  const defs = filterDefs(kind, { isSeen: store.isSeen, included: isOwnIncluded, rentable: (t) => offersOf(t).some((o) => o.type === 'rent') });
   // F2: the page starts with no filters each time HomeTV starts.
   const filters = defaultFilters();
   let list: ListChoice = 'all';
@@ -171,12 +172,12 @@ export function libraryScreen(kind: Kind): Screen {
       offline ? `${count} · prices may be out of date` : shown.length === inChosen.length ? `${count} · Across your services` : `${count} · Filtered`,
     );
     const watchlists = lists.watchlists();
-    const services = servicesCount();
+    const services = subscribedCount();
     replace(
       scopeEl,
       offline
         ? h('span.offline-pill', h('span', { html: icon('wifiOff', 24) }), 'Offline · showing your lists as saved')
-        : h('span.lib-scope-text', `${watchlists} imported watchlist${watchlists === 1 ? '' : 's'}${services === null ? '' : ` · All ${services} services`}`),
+        : h('span.lib-scope-text', `${watchlists} imported watchlist${watchlists === 1 ? '' : 's'} · All ${services} services`),
     );
     replace(contextEl, `Your collection · ${lists.names()}`);
 
@@ -207,10 +208,9 @@ export function libraryScreen(kind: Kind): Screen {
       ]);
     } else {
       drawGrid(shown.map((t) => t.id).join(','), () =>
-        shown.map((t, i) => miniCard(t, { group: 'grid', key: `t-${t.id}`, isDefault: i === 0, onOk: () => openTitle(t) })),
+        shown.map((t, i) => miniCard(t, { group: 'grid', key: `t-${t.id}`, isDefault: i === 0, onOk: () => shell.push(titlePage(t)) })),
       );
     }
-    if (el.isConnected) lazy.check();
     refocus();
   };
 
@@ -224,7 +224,6 @@ export function libraryScreen(kind: Kind): Screen {
     grid,
     h('div.page-end'),
   );
-  const lazy = lazyImages(page);
 
   const el = h(
     'div.screen.screen--full.library',

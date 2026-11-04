@@ -46,7 +46,7 @@ export function filtersDrawer(kind: Kind, defs: FilterDef[], state: FilterState,
 
   const el = h(
     'div.screen.screen--full',
-    h('div.scrim'),
+    h('div.scrim.scrim--light'),
     h(
       'div.drawer',
       h('div.drawer-title', 'Filters'),

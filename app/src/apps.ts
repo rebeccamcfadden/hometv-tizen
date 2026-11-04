@@ -5,7 +5,7 @@
 import { APP_BRAND, HOME_APPS as SHARED_HOME_APPS, HOME_ROW_MAX } from '@hometv/core/services.ts';
 import { loadRow, saveRow, type RowEntry } from './homeRow';
 
-const SAMSUNG_KEY: Record<string, string> = { appletvplus: 'appletv' };
+export const SAMSUNG_KEY: Record<string, string> = { appletvplus: 'appletv' };
 
 export interface HomeApp {
   /** The app's name on Samsung (service.js's APPS table). */

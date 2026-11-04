@@ -58,6 +58,9 @@
   -webkit-flex: none;
   flex: none;
 }
+.library .chips > .chip {
+  margin: 0 12px 0 0;
+}
 .chips-label {
   margin-right: 18px;
   font-size: var(--t-small);

@@ -1,18 +1,19 @@
 import './styles.css';
 import { bridge } from './bridge';
-import { shell, type Screen } from './shell/app';
-import { h } from './shell/dom';
+import { shell } from './shell/app';
 import { homeScreen } from './screens/home';
 import { showChecks } from './screens/checks';
 import { libraryScreen } from './screens/library';
+// Fills routes.person, so Cast & crew and Search's People results open the person page.
+import './screens/person';
+import { searchScreen } from './screens/search';
 
-// HomeTV for Samsung: the shell (screen stack, focus, keys) and its screens. Home first; the other tabs are filled
-// as screens are ported from design_preview.
+// HomeTV for Samsung: the shell (screen stack, focus, keys) and its screens. Home first; Movies, TV Shows and Search are
+// its tabs, ported from design_preview.
 
 const t0 = Date.now();
 const stage = document.getElementById('stage') as HTMLElement;
 
-const placeholder = (label: string): Screen => ({ label, el: h('div.screen', h('h2.rowtitle', `${label}: not ported yet`)) });
 const home = homeScreen();
 
 shell.extraKeys = {
@@ -30,7 +31,7 @@ async function start() {
     home: () => home,
     movies: () => libraryScreen('movie'),
     tv: () => libraryScreen('show'),
-    search: () => placeholder('Search'),
+    search: searchScreen,
   });
   const homeShownMs = Date.now() - t0;
   // Tells the installed app's loader (app/loader/boot.js) this page works; its updater may then look for a newer one.

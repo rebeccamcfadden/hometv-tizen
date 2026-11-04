@@ -1,20 +1,22 @@
-// Pieces the ported screens share, from design_preview's ui/widgets.ts: the nav (Home, Movies, TV Shows, Search),
-// buttons, chips, the guide line and the title card (F46's poster card with the service pill). Styles in widgets.css,
-// on @hometv/core's tokens.
-
-import '@hometv/core/tokens.css';
-import './widgets.css';
-import type { Title } from '@hometv/core/types.ts';
-import { cardSubtitle } from '../data/offerStandIns';
+// The pieces the ported screens share (Search, the title page, Movies, TV Shows, All apps, a person), from
+// hometv-launcher's design_preview/src/ui/widgets.ts at 2bf3c2d: the nav, buttons, chips, the guide line, the C title
+// card (F46) with its service pill, people and rows. Built for Chromium 56; posters load when their card comes into view.
+import type { Offer, Title } from '@hometv/core/types.ts';
+import { SERVICES } from '@hometv/core/services.ts';
+import { cardOffer } from '../data/offers';
 import { posterUrl } from '../data/posters';
+import { CURRENCY } from '../data/settings';
 import { h } from '../shell/dom';
 import { focusable, type FocusOpts } from '../shell/focus';
 import { shell, type TabId } from '../shell/app';
 import { icon, type IconName } from './icons';
+import '@hometv/core/tokens.css';
+import './widgets.css';
 
 /**
- * The page's sections. OK on one switches to it; focusing it only highlights it. OK on the page you are already on
- * does nothing. The device icons of design_preview's nav (Wi-Fi, Inputs, quick settings) aren't part of these ports.
+ * The page's sections (Home, Movies, TV Shows, Search). OK on one switches to it; focusing it only highlights it. OK on
+ * the page you are already on does nothing. The device icons of design_preview's nav (Wi-Fi, Inputs, quick settings)
+ * aren't ported.
  */
 export function navBar(active: TabId | null): HTMLElement {
   const tabs: [TabId, string][] = [
@@ -24,7 +26,9 @@ export function navBar(active: TabId | null): HTMLElement {
   ];
   let tabsRoot: HTMLElement | null = null;
   const section = (id: TabId, label: string | null) => {
-    const el = label ? h('div.nav-tab' + (id === active ? '.is-active' : ''), label) : h('div.nav-search' + (id === active ? '.is-active' : ''), { html: icon('search') });
+    const el = label
+      ? h('div.nav-tab' + (id === active ? '.is-active' : ''), label)
+      : h('div.nav-search' + (id === active ? '.is-active' : ''), { html: icon('search') });
     const open = () => {
       if (el.classList.contains('is-active')) return;
       const from = shell.top();
@@ -44,16 +48,6 @@ export function navBar(active: TabId | null): HTMLElement {
   return h('div.nav', tabsRoot);
 }
 
-export function button(label: string, opts: FocusOpts & { icon?: IconName; primary?: boolean; small?: boolean } = {}): HTMLElement {
-  const cls = 'div.btn' + (opts.primary ? '.btn--primary' : '') + (opts.small ? '.btn--small' : '');
-  const el = h(cls, opts.icon ? h('span.btn-icon', { html: icon(opts.icon, opts.small ? 22 : 26) }) : null, h('span.btn-label', label));
-  return focusable(el, opts);
-}
-
-export function chip(label: string, opts: FocusOpts & { selected?: boolean } = {}): HTMLElement {
-  return focusable(h('div.chip' + (opts.selected ? '.is-selected' : ''), label), opts);
-}
-
 export const guide = (left: string, right: string) => h('div.guide', h('span', left), h('span.guide-right', right));
 
 export const initials = (name: string) =>
@@ -65,63 +59,100 @@ export const initials = (name: string) =>
     .join('')
     .toUpperCase();
 
-/**
- * F46 (Rebecca, 2026-11-04 09:57): the title card on every page with title cards. Only the poster (195 × 293), with the
- * service pill on its top-left corner. Focused: the accent ring, a slight scale-up, and the name with "year · score"
- * on a dark fade at the poster's foot. The poster loads when it comes near the screen ({@link lazyImages}); with none,
- * or when it won't load, the card shows the title's name.
- */
-export function miniCard(t: Title, opts: FocusOpts & { name?: Node | string } = {}): HTMLElement {
-  const img = h('img.lazy', { alt: '' }) as HTMLImageElement;
-  const url = posterUrl(t);
-  if (url) img.setAttribute('data-src', url);
-  else img.className = 'is-missing';
-  img.onerror = () => {
-    img.onerror = null;
-    img.className = 'is-missing';
-  };
-  const line = cardSubtitle(t);
-  return focusable(
-    h(
-      'div.card.card--mini',
-      { 'data-title': t.id },
-      h(
-        'div.card-art',
-        h('div.card-fallback', t.name),
-        img,
-        line ? h('div.svc-pill', h('span.pill-name', line)) : null,
-        h('div.mini-focus', h('div.mini-name', opts.name || t.name), h('div.mini-meta', `${t.year} · ${t.score.toFixed(1)}/10`)),
-      ),
-    ),
-    opts,
+export function button(
+  label: string,
+  opts: FocusOpts & { icon?: IconName; primary?: boolean; small?: boolean; iconOnly?: boolean; on?: boolean } = {},
+): HTMLElement {
+  const cls = ['btn', opts.primary && 'btn--primary', opts.small && 'btn--small', opts.iconOnly && 'btn--icon', opts.on && 'is-on']
+    .filter(Boolean)
+    .join('.');
+  const el = h(
+    `div.${cls}`,
+    opts.icon ? h('span.btn-icon', { html: icon(opts.icon, opts.small ? 22 : 26, opts.icon === 'play' || (!!opts.on && opts.icon === 'heart')) }) : null,
+    h('span.btn-label', label),
   );
+  return focusable(el, opts);
+}
+
+export function chip(label: string, opts: FocusOpts & { selected?: boolean } = {}): HTMLElement {
+  return focusable(h(`div.chip${opts.selected ? '.is-selected' : ''}`, label), opts);
+}
+
+/** Sets or removes a boolean attribute (toggleAttribute is Chromium 69). */
+export function flag(el: Element, name: string, on: boolean) {
+  if (on) el.setAttribute(name, '');
+  else el.removeAttribute(name);
+}
+
+// Posters load once their card is in view (the TV may draw 40 at a time); without IntersectionObserver, at once.
+const lazy =
+  typeof IntersectionObserver !== 'undefined'
+    ? new IntersectionObserver(
+        (entries) => {
+          for (const e of entries) {
+            if (e.intersectionRatio <= 0 && !(e as { isIntersecting?: boolean }).isIntersecting) continue;
+            lazy!.unobserve(e.target);
+            load(e.target as HTMLImageElement);
+          }
+        },
+        { rootMargin: '200px' },
+      )
+    : null;
+
+function load(img: HTMLImageElement) {
+  const src = img.getAttribute('data-src');
+  if (src) img.src = src;
+}
+
+/** The title's poster; with none, or when it won't load, the art box gets is-missing and shows the name instead. */
+export function posterArt(t: Title, box: HTMLElement): HTMLImageElement {
+  const img = document.createElement('img');
+  img.alt = '';
+  const url = posterUrl(t);
+  const missing = () => {
+    img.onerror = null;
+    box.classList.add('is-missing');
+  };
+  if (!url) missing();
+  else {
+    img.onerror = missing;
+    img.setAttribute('data-src', url);
+    if (lazy) lazy.observe(img);
+    else load(img);
+  }
+  return img;
 }
 
 /**
- * Loads `img.lazy[data-src]` under `scroller` once they come within `margin` px (stage px) of its visible part: only
- * what is near the screen asks the network, and the rest waits for a scroll. Call `check()` after drawing.
+ * F46: the pill on a C card: a round icon (a tick on green for Included or Free, the currency for rent or buy) and the
+ * service's name. None when the household has no offer.
  */
-export function lazyImages(scroller: HTMLElement, margin = 600): { check(): void } {
-  let pending = false;
-  const check = () => {
-    pending = false;
-    const imgs = scroller.querySelectorAll('img.lazy[data-src]');
-    if (!imgs.length) return;
-    const box = scroller.getBoundingClientRect();
-    const m = margin * shell.scale;
-    for (let i = 0; i < imgs.length; i++) {
-      const img = imgs[i] as HTMLImageElement;
-      const r = img.getBoundingClientRect();
-      if (!r.height || r.bottom < box.top - m || r.top > box.bottom + m) continue;
-      img.src = img.getAttribute('data-src')!;
-      img.removeAttribute('data-src');
-      img.classList.remove('lazy');
-    }
-  };
-  scroller.addEventListener('scroll', () => {
-    if (pending) return;
-    pending = true;
-    window.setTimeout(check, 80);
-  });
-  return { check };
+export function servicePill(o: Offer | undefined): HTMLElement | null {
+  if (!o) return null;
+  const paid = o.type === 'rent' || o.type === 'buy';
+  const mark = paid ? h('span.pill-ico.pill-ico--paid', CURRENCY) : h('span.pill-ico.pill-ico--incl', { html: icon('check', 18) });
+  return h('div.svc-pill', mark, h('span.pill-name', SERVICES[o.service].name));
+}
+
+/**
+ * F46: the title card. Only the poster, the service pill on its corner; focused, the name (two lines at most) and
+ * "year · score" on a dark fade at its foot. `name` replaces the shown name (Search's highlighted match).
+ */
+export function miniCard(t: Title, opts: FocusOpts & { name?: Node | string } = {}): HTMLElement {
+  const art = h('div.card-art');
+  art.appendChild(posterArt(t, art));
+  const pill = servicePill(cardOffer(t));
+  if (pill) art.appendChild(pill);
+  art.appendChild(h('div.card-missing', t.name));
+  art.appendChild(h('div.mini-focus', h('div.mini-name', opts.name || t.name), h('div.mini-meta', `${t.year} · ${t.score.toFixed(1)}/10`)));
+  return focusable(h('div.card.card--mini', { 'data-title': t.id }, art), opts);
+}
+
+export function personCard(name: string, role: string, opts: FocusOpts = {}): HTMLElement {
+  return focusable(h('div.person', h('div.person-portrait', initials(name)), h('div.person-name', name), h('div.person-role', role)), opts);
+}
+
+/** A labelled row that scrolls sideways; `pad` keeps the focused card that far from its edges. */
+export function rowOf(label: string, items: HTMLElement[], pad = 0): HTMLElement {
+  return h('div.row', h('div.row-label', label), h('div.row-items', { 'data-scroll': 'x', 'data-scroll-pad': pad }, items));
 }

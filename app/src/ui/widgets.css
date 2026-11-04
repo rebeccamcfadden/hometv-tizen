@@ -1,6 +1,320 @@
-/* The ported screens' shared pieces (ui/widgets.ts, screens/dropdown.ts), from design_preview's base.css and
-   screens.css on @hometv/core's tokens, rewritten for Chromium 56: no grid, no flex gap (margins instead), no inset. */
+/* The ported screens' shared pieces (ui/widgets.ts, screens/dropdown.ts, screens/filters.ts): buttons, chips, the C
+   title card, people, rows, the nav, page furniture, menus and the drawer, from design_preview's base.css and
+   screens.css at 2bf3c2d with @hometv/core's tokens. Chromium 56: no grid, no flex gap (margins instead), no inset. */
 
+.icon {
+  display: block;
+  flex: none;
+}
+.muted {
+  color: var(--text-3);
+}
+.hit {
+  color: var(--accent);
+  font-weight: 600;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--good-soft);
+  color: var(--good);
+  font-size: 17px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+[data-focus] {
+  cursor: pointer;
+  transition:
+    background var(--fast) ease,
+    color var(--fast) ease,
+    box-shadow var(--fast) ease,
+    transform var(--fast) var(--ease);
+}
+
+/* ---- Buttons ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  height: 66px;
+  padding: 0 30px 0 24px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: var(--line-w) solid var(--line);
+  box-sizing: border-box;
+  font-size: var(--t-body);
+  white-space: nowrap;
+  color: var(--text-1);
+}
+.btn-icon + .btn-label {
+  margin-left: 12px;
+}
+.btn--small {
+  height: 56px;
+  padding: 0 22px 0 18px;
+  font-size: var(--t-small);
+}
+.btn--primary {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.btn.is-on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.btn.is-focused {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  transform: scale(1.04);
+}
+/* Icon-only buttons show their label while focused. */
+.btn--icon {
+  width: 66px;
+  padding: 0;
+  justify-content: center;
+}
+.btn--icon .btn-label {
+  display: none;
+}
+.btn--icon.is-focused {
+  width: auto;
+  padding: 0 28px 0 20px;
+}
+.btn--icon.is-focused .btn-label {
+  display: inline;
+  margin-left: 10px;
+}
+
+/* ---- Chips ---- */
+.chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.chips > .chip {
+  margin: 0 12px 12px 0;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 54px;
+  padding: 0 22px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: var(--line-w) solid var(--line);
+  font-size: var(--t-small);
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.chip.is-selected {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.chip.is-focused {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  transform: scale(1.05);
+}
+
+/* ---- The C card (F46) and its service pill ---- */
+.card-art {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-l);
+  background: var(--bg-raised);
+  box-shadow: inset 0 0 0 var(--line-w) var(--line);
+  transition:
+    box-shadow var(--fast) ease,
+    transform var(--fast) var(--ease);
+}
+.card-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.card.is-focused .card-art {
+  box-shadow: var(--focus-ring);
+  transform: scale(1.03);
+}
+.card--mini {
+  display: inline-block;
+  vertical-align: top;
+  width: 195px;
+}
+.card--mini .card-art {
+  width: 195px;
+  height: 293px;
+  border-radius: 12px;
+}
+.card--mini .card-art > img {
+  object-position: 50% 40%;
+}
+/* No poster, or it won't load: the name on the card's own colour. */
+.card-missing {
+  display: none;
+}
+.card-art.is-missing > img {
+  display: none;
+}
+.card-art.is-missing .card-missing {
+  display: block;
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 96px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+.card--mini.is-focused .card-art.is-missing .card-missing {
+  display: none;
+}
+.svc-pill {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  max-width: 179px;
+  display: flex;
+  align-items: center;
+  padding: 4px 10px 4px 4px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  background: rgba(9, 14, 21, 0.86);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  color: #f4f5f7;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+}
+.pill-ico {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-right: 6px;
+  border-radius: 50%;
+}
+.pill-ico--incl {
+  background: var(--good);
+  color: #0b1a10;
+}
+.pill-ico--paid {
+  background: rgba(255, 255, 255, 0.18);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.pill-name {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Focused: the name and "year · score" on a dark fade at the poster's foot. */
+.mini-focus {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 56px 12px 12px;
+  background: linear-gradient(rgba(5, 8, 12, 0), rgba(5, 8, 12, 0.92) 55%);
+  color: #f4f5f7;
+  opacity: 0;
+  transition: opacity var(--fast) ease;
+}
+.card--mini.is-focused .mini-focus {
+  opacity: 1;
+}
+.mini-name {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mini-meta {
+  margin-top: 4px;
+  font-size: 18px;
+  color: #adb5c0;
+}
+
+/* ---- People ---- */
+.person {
+  flex: none;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  width: 176px;
+  text-align: center;
+  vertical-align: top;
+}
+.person-portrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--person-bg);
+  box-shadow: inset 0 0 0 var(--line-w) var(--line);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--text-2);
+  transition:
+    box-shadow var(--fast) ease,
+    transform var(--fast) var(--ease);
+}
+.person.is-focused .person-portrait {
+  box-shadow: var(--focus-ring);
+  transform: scale(1.06);
+}
+.person-name {
+  margin-top: 12px;
+  font-size: var(--t-small);
+  font-weight: 500;
+}
+.person-role {
+  margin-top: 2px;
+  font-size: var(--t-min);
+  color: var(--text-3);
+}
+
+/* ---- Rows ---- */
+.row {
+  margin-bottom: 34px;
+}
+.row-label {
+  margin-bottom: 16px;
+  font-size: var(--t-h3);
+}
+.row-items {
+  display: flex;
+  overflow: hidden;
+  /* Room for the focus ring and scale. */
+  padding: 8px;
+  margin: -8px;
+}
+.row-items > * {
+  flex: none;
+  margin-right: 20px;
+}
+
+/* ---- Full-stage pages and layers: Movies, TV Shows, All apps, a person, menus and drawers ---- */
 .screen.screen--full {
   left: 0;
   right: 0;
@@ -10,22 +324,31 @@
   font-family: var(--font-ui);
   color: var(--text-1);
 }
-
-.icon {
-  display: block;
-  -webkit-flex: none;
-  flex: none;
+.scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(5, 8, 12, 0.58);
+  animation: fade-in var(--fast) ease-out;
+}
+.scrim--light {
+  background: rgba(5, 8, 12, 0.35);
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
-/* ---- Nav ---- */
+/* ---- Nav: Home, Movies, TV Shows, Search (navBar) ---- */
 .nav {
   position: absolute;
   top: 48px;
   left: var(--safe-x);
   right: var(--safe-x);
-  display: -webkit-flex;
   display: flex;
-  -webkit-align-items: center;
   align-items: center;
   z-index: 5;
 }
@@ -37,13 +360,10 @@
   margin-top: 36px;
 }
 .nav-left {
-  display: -webkit-flex;
   display: flex;
-  -webkit-align-items: center;
   align-items: center;
 }
 .nav-tabs {
-  display: -webkit-flex;
   display: flex;
   padding: 6px 0 6px 6px;
   margin-right: 40px;
@@ -55,20 +375,15 @@
   height: 60px;
   padding: 0 30px;
   margin-right: 6px;
-  display: -webkit-flex;
   display: flex;
-  -webkit-align-items: center;
   align-items: center;
   border-radius: var(--radius-pill);
   font-size: 25px;
   color: var(--text-2);
 }
 .nav-search {
-  display: -webkit-flex;
   display: flex;
-  -webkit-align-items: center;
   align-items: center;
-  -webkit-justify-content: center;
   justify-content: center;
   width: 64px;
   height: 64px;
@@ -84,75 +399,6 @@
 .nav-tab.is-focused,
 .nav-search.is-focused {
   background: var(--accent);
-  color: var(--on-accent);
-  transform: scale(1.05);
-}
-
-/* ---- Focus transitions, buttons, chips ---- */
-[data-focus] {
-  cursor: pointer;
-  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 140ms ease-out;
-}
-.btn {
-  display: -webkit-inline-flex;
-  display: inline-flex;
-  -webkit-align-items: center;
-  align-items: center;
-  height: 66px;
-  padding: 0 30px 0 24px;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  border: var(--line-w) solid var(--line);
-  font-size: var(--t-body);
-  color: var(--text-1);
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-.btn-icon {
-  margin-right: 12px;
-}
-.btn--small {
-  height: 56px;
-  padding: 0 22px 0 18px;
-  font-size: var(--t-small);
-}
-.btn--primary {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 600;
-}
-.btn.is-focused {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-  transform: scale(1.04);
-}
-.chip {
-  display: -webkit-inline-flex;
-  display: inline-flex;
-  -webkit-align-items: center;
-  align-items: center;
-  height: 54px;
-  padding: 0 22px;
-  margin-right: 12px;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  border: var(--line-w) solid var(--line);
-  font-size: var(--t-small);
-  color: var(--text-2);
-  white-space: nowrap;
-  box-sizing: border-box;
-}
-.chip.is-selected {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 600;
-}
-.chip.is-focused {
-  background: var(--accent);
-  border-color: var(--accent);
   color: var(--on-accent);
   transform: scale(1.05);
 }
@@ -175,10 +421,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-3);
-}
-.row-label {
-  margin-bottom: 16px;
-  font-size: var(--t-h3);
 }
 .guide {
   position: absolute;
@@ -217,9 +459,7 @@
   color: var(--text-2);
 }
 .offline-pill {
-  display: -webkit-inline-flex;
   display: inline-flex;
-  -webkit-align-items: center;
   align-items: center;
   padding: 8px 18px;
   border-radius: var(--radius-pill);
@@ -228,102 +468,8 @@
   font-size: var(--t-small);
   white-space: nowrap;
 }
-.offline-pill .icon {
-  margin-right: 10px;
-}
-
-/* ---- F46: the title card (miniCard) and its service pill ---- */
-.card--mini {
-  display: inline-block;
-  vertical-align: top;
-  width: 195px;
-}
-.card-art {
-  position: relative;
-  overflow: hidden;
-  border-radius: 12px;
-  background: var(--bg-raised);
-  box-shadow: inset 0 0 0 var(--line-w) var(--line);
-  transition: box-shadow 140ms ease, transform 140ms ease-out;
-}
-.card--mini .card-art {
-  width: 195px;
-  height: 293px;
-}
-.card-art img {
-  position: absolute;
-  left: 0;
-  top: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 40%;
-}
-.card-art img.is-missing {
-  display: none;
-}
-/* The title's name, under the poster: what shows while it loads, or when there is none. */
-.card-fallback {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 40px;
-  font-size: 22px;
-  font-weight: 500;
-  line-height: 1.25;
-  color: var(--text-2);
-  text-align: center;
-}
-.card.is-focused .card-art {
-  box-shadow: var(--focus-ring);
-  transform: scale(1.03);
-}
-.svc-pill {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  max-width: 179px;
-  box-sizing: border-box;
-  padding: 6px 12px;
-  border-radius: var(--radius-pill);
-  background: rgba(9, 14, 21, 0.86);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-  color: #f4f5f7;
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.mini-focus {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 56px 12px 12px;
-  background: linear-gradient(rgba(5, 8, 12, 0), rgba(5, 8, 12, 0.92) 55%);
-  color: #f4f5f7;
-  opacity: 0;
-  transition: opacity 140ms ease;
-}
-.card--mini.is-focused .mini-focus {
-  opacity: 1;
-}
-.mini-name {
-  font-size: 20px;
-  font-weight: 600;
-  line-height: 1.2;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.mini-meta {
-  margin-top: 4px;
-  font-size: 18px;
-  color: #adb5c0;
+.offline-pill > * + * {
+  margin-left: 10px;
 }
 
 /* ---- Dropdown menus (screens/dropdown.ts) ---- */
@@ -352,9 +498,7 @@
   }
 }
 .menu-row {
-  display: -webkit-flex;
   display: flex;
-  -webkit-align-items: center;
   align-items: center;
   height: 72px;
   padding: 0 22px;
@@ -367,11 +511,9 @@
   margin-right: 18px;
 }
 .menu-label {
-  -webkit-flex: 1;
   flex: 1;
 }
 .menu-check {
-  display: -webkit-flex;
   display: flex;
   margin-left: 24px;
   color: var(--accent);
@@ -385,14 +527,6 @@
 }
 
 /* ---- Filters drawer (screens/filters.ts) ---- */
-.scrim {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(5, 8, 12, 0.35);
-}
 .drawer {
   position: absolute;
   top: 0;
@@ -423,11 +557,8 @@
   margin-top: 36px;
 }
 .setting {
-  display: -webkit-flex;
   display: flex;
-  -webkit-justify-content: space-between;
   justify-content: space-between;
-  -webkit-align-items: center;
   align-items: center;
   height: 84px;
   padding: 0 18px 0 26px;
@@ -442,9 +573,7 @@
   color: var(--text-2);
 }
 .setting-control {
-  display: -webkit-flex;
   display: flex;
-  -webkit-align-items: center;
   align-items: center;
   color: var(--text-3);
 }
@@ -462,9 +591,9 @@
 .setting.is-focused * {
   color: var(--on-accent);
 }
-.drawer-actions {
-  margin-top: 40px;
-}
 .drawer-actions .btn {
   margin-right: 16px;
+}
+.drawer-actions {
+  margin-top: 40px;
 }

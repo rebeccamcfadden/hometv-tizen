@@ -1,7 +1,7 @@
-// Household state that outlives a screen: My list, Seen and Favorites (what the title page's toggles change), recent
-// searches and recently viewed titles. Ported from design_preview's core/store.ts; kept in localStorage under
-// `hometv-household-v1`. Mock defaults until the TMDB account is shared: the catalogue's own My list.
-
+// TEMPORARY copy of hometv-launcher's design_preview/src/core/store.ts at 2bf3c2d: the household's own state that the
+// title page's buttons and Search change (My list, Seen, Favorites, recent searches, recently viewed), until it has a
+// home on Samsung (TMDB's lists once the account is shared). Changes: its own storage key; Set spread written out;
+// blocked or full storage keeps changes for this visit only; reset() doesn't reload the page.
 import { TITLES } from './catalog';
 
 interface Persisted {
@@ -25,58 +25,50 @@ const defaults = (): Persisted => ({
 });
 
 function load(): Persisted {
-  const d = defaults();
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const saved = JSON.parse(raw) as Partial<Persisted>;
-      return {
-        myList: saved.myList || d.myList,
-        seen: saved.seen || d.seen,
-        favorites: saved.favorites || d.favorites,
-        recent: saved.recent || d.recent,
-        viewed: saved.viewed || d.viewed,
-      };
-    }
+    if (raw) return { ...defaults(), ...(JSON.parse(raw) as Partial<Persisted>) };
   } catch (e) {
     // Corrupt or blocked storage: start fresh.
   }
-  return d;
+  return defaults();
 }
 
-const data = load();
+let data = load();
 data.recent = data.recent.slice(0, MAX_RECENT);
-// Arrays kept in order (My list's order is "Recently added"), with a lookup beside each.
-const sets = { myList: data.myList, seen: data.seen, favorites: data.favorites };
+let myList = new Set(data.myList);
+let seen = new Set(data.seen);
+let favorites = new Set(data.favorites);
+
+const ids = (s: Set<string>) => Array.from(s);
 
 function save() {
+  const out: Persisted = { myList: ids(myList), seen: ids(seen), favorites: ids(favorites), recent: data.recent, viewed: data.viewed };
   try {
-    localStorage.setItem(KEY, JSON.stringify(data));
+    localStorage.setItem(KEY, JSON.stringify(out));
   } catch (e) {
-    // Lasts until the page reloads.
+    // Blocked or full storage: the change holds for this visit.
   }
 }
 
 const listeners: (() => void)[] = [];
 
-function toggle(list: string[], id: string): boolean {
-  const i = list.indexOf(id);
-  if (i >= 0) list.splice(i, 1);
-  else list.push(id);
+function toggle(set: Set<string>, id: string): boolean {
+  if (set.has(id)) set.delete(id);
+  else set.add(id);
   save();
   listeners.slice().forEach((fn) => fn());
-  return i < 0;
+  return set.has(id);
 }
 
 export const store = {
-  inMyList: (id: string) => sets.myList.indexOf(id) >= 0,
-  isSeen: (id: string) => sets.seen.indexOf(id) >= 0,
-  isFavorite: (id: string) => sets.favorites.indexOf(id) >= 0,
-  toggleMyList: (id: string) => toggle(sets.myList, id),
-  toggleSeen: (id: string) => toggle(sets.seen, id),
-  toggleFavorite: (id: string) => toggle(sets.favorites, id),
-  /** My list, oldest added first. */
-  myListIds: () => sets.myList.slice(),
+  inMyList: (id: string) => myList.has(id),
+  isSeen: (id: string) => seen.has(id),
+  isFavorite: (id: string) => favorites.has(id),
+  toggleMyList: (id: string) => toggle(myList, id),
+  toggleSeen: (id: string) => toggle(seen, id),
+  toggleFavorite: (id: string) => toggle(favorites, id),
+  myListIds: () => ids(myList),
   recent: () => data.recent,
   viewed: () => data.viewed,
   pushRecent(q: string) {
@@ -88,6 +80,19 @@ export const store = {
   pushViewed(id: string) {
     data.viewed = [id].concat(data.viewed.filter((r) => r !== id)).slice(0, 10);
     save();
+  },
+  /** Forgets everything (tests, and a later Reset in settings). */
+  reset() {
+    try {
+      localStorage.removeItem(KEY);
+    } catch (e) {
+      // Blocked storage: the defaults still apply for this visit.
+    }
+    data = defaults();
+    myList = new Set(data.myList);
+    seen = new Set(data.seen);
+    favorites = new Set(data.favorites);
+    listeners.slice().forEach((fn) => fn());
   },
   /** Calls `fn` after My list, Seen or Favorites changes; returns a function that stops it. */
   on(fn: () => void): () => void {
