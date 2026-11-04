@@ -13,6 +13,15 @@ export const MOCK_INSTALLED = {
   '3201606009684': 'Spotify',
   '3201512006963': 'Plex',
   'xvvl3S1bvH.TizenBrewStandalone': 'TizenBrew',
+  // Made-up ids, for All apps and its TV Utilities folder: a few apps a Samsung comes with, one the household added,
+  // and two of the firmware's own parts that All apps leaves out.
+  'FakeSmTvP1.TVPlus': 'Samsung TV Plus',
+  'FakeSmThg1.SmartThings': 'SmartThings',
+  'FakeGalry1.Gallery': 'Gallery',
+  'FakeBrows1.Internet': 'Internet',
+  'FakeTwtch1.Twitch': 'Twitch',
+  'org.tizen.settings': 'Settings',
+  'com.samsung.tv.fake-service': 'Fake background service',
 };
 
 class WebAPIError extends Error {
@@ -56,7 +65,8 @@ export function createMockTizen({ installed = MOCK_INSTALLED, listApps = true, l
       getAppsInfo(ok, err) {
         calls.push({ fn: 'getAppsInfo' });
         if (!listApps) return later(() => err(new WebAPIError('SecurityError', 'application.info not granted')));
-        later(() => ok(Object.entries(installed).map(([id, name]) => ({ id, name }))));
+        // The package is the part before the first dot, as on the TV.
+        later(() => ok(Object.entries(installed).map(([id, name]) => ({ id, name, packageId: id.split('.')[0] }))));
       },
       getAppInfo() {
         return { id: 'xvvl3S1bvH.TizenBrewStandalone', packageId: 'xvvl3S1bvH' };

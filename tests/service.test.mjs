@@ -52,6 +52,42 @@ test('launch says when no id works', async () => {
   assert.equal(r.id, null);
 });
 
+test('apps/all lists the apps a person would open, by name, without the firmware’s own parts', async () => {
+  const r = await get('/apps/all');
+  assert.equal(r.listed, true);
+  const names = r.apps.map((a) => a.name);
+  assert.deepEqual(names, names.slice().sort((a, b) => (a.toLowerCase() < b.toLowerCase() ? -1 : 1)));
+  for (const want of ['Netflix', 'YouTube', 'TizenBrew', 'Samsung TV Plus', 'SmartThings', 'Twitch']) assert.ok(names.includes(want), want);
+  assert.ok(!names.includes('Settings'), 'not a store app');
+  assert.ok(!names.includes('Fake background service'), 'a service');
+  assert.equal(r.apps.filter((a) => a.name === 'Netflix')[0].id, '11101200001');
+});
+
+test('apps/all keeps the streaming apps a Samsung comes with under firmware-style ids', () => {
+  const apps = dev.service.realApps([
+    { id: 'org.tizen.netflix-app', packageId: 'org.tizen.netflix-app', name: 'Netflix' },
+    { id: 'org.tizen.primevideo', packageId: 'org.tizen.primevideo', name: 'Prime Video' },
+    { id: 'com.samsung.tv.aria-video', packageId: 'com.samsung.tv.aria-video', name: 'Apple TV' },
+    { id: '9Ur5IzDKqV.TizenYouTube', packageId: '9Ur5IzDKqV', name: 'YouTube' },
+    { id: 'org.tizen.browser', packageId: 'org.tizen.browser', name: 'Internet' },
+    { id: 'AbCdEfGhIj.Hidden', packageId: 'AbCdEfGhIj', name: 'Hidden', show: false },
+  ]);
+  // The service runs in its own VM context: compare as plain JSON.
+  assert.deepEqual(JSON.parse(JSON.stringify(apps.map((a) => a.name))), ['Apple TV', 'Netflix', 'Prime Video', 'YouTube']);
+});
+
+test('launch by id opens an app All apps lists, and nothing else', async () => {
+  const r = await post('/launch', { id: 'FakeTwtch1.Twitch' });
+  assert.equal(r.ok, true);
+  assert.equal(r.id, 'FakeTwtch1.Twitch');
+  assert.equal(dev.calls.filter((c) => c.fn === 'launch').at(-1).id, 'FakeTwtch1.Twitch');
+  const before = dev.calls.length;
+  const refused = await post('/launch', { id: 'org.tizen.settings' });
+  assert.equal(refused.ok, false);
+  assert.match(refused.tried[0].error, /not an app this TV lists/);
+  assert.equal(dev.calls.filter((c, i) => i >= before && c.fn === 'launch').length, 0);
+});
+
 test('info reports model, Tizen and Node versions', async () => {
   const r = await post('/check/info', {});
   assert.equal(r.ok, true);

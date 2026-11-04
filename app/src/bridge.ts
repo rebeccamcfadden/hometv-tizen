@@ -6,7 +6,7 @@
 //   (service/service.js) on 127.0.0.1:8766: on the TV, or on a PC with the fake TV (`npm run dev`).
 // - **preview**: neither; the page still works and says so.
 
-import { HOME_APPS } from './apps';
+import { HOME_APPS, keyForName } from './apps';
 import { appControl, pageChecks } from './pageChecks';
 import type { OpenPlan } from './titleLinks';
 
@@ -19,6 +19,18 @@ export interface AppInfo {
   name: string;
   /** null when the TV won't list its apps. */
   installed: boolean | null;
+}
+
+/** A key for any installed app, not only Home's known ones: "app:" and the TV's own app id. */
+export const APP_PREFIX = 'app:';
+
+/** An app on the TV, for All apps. */
+export interface TvApp {
+  /** The TV's own app id. */
+  id: string;
+  name: string;
+  /** The Home tile it is (apps.ts), when it is one of those. */
+  key: string | null;
 }
 
 export interface Result {
@@ -79,20 +91,29 @@ let problem = '';
 const previewLog: Result[] = [];
 
 /**
- * The installed app for a Home tile, by name (AeroTizen's catalogue keys differ from ours). An app that isn't on Home's
- * row (a store's, or Viaplay's from the title page) is found by `name`.
+ * The installed app for a Home tile, by name (AeroTizen's catalogue keys differ from ours), or "app:" and its id (All
+ * apps, Home's row). An app that isn't on Home's row (a store's, or Viaplay's from the title page) is found by `name`.
  */
 function installedFor(key: string, name?: string): AeroApp | null {
   const aero = w.AeroTizen;
+  if (!aero) return null;
+  if (key.indexOf(APP_PREFIX) === 0) {
+    const id = key.slice(APP_PREFIX.length);
+    return aero.apps.all.filter((a) => a.id === id)[0] || null;
+  }
   const tile = HOME_APPS.filter((a) => a.key === key)[0];
-  if (!aero || (!tile && !name)) return null;
-  const want = (tile ? tile.name : name!).toLowerCase();
-  return (
-    aero.apps.all.filter((a) => {
-      const n = a.name.toLowerCase();
-      return n.indexOf(want) === 0 || (key === 'max' && n === 'max');
-    })[0] || null
-  );
+  if (tile) {
+    // The app that is this tile by name; else, as before, the first whose name starts with the tile's.
+    const want = tile.name.toLowerCase();
+    return (
+      aero.apps.all.filter((a) => keyForName(a.name) === key)[0] ||
+      aero.apps.all.filter((a) => a.name.toLowerCase().indexOf(want) === 0)[0] ||
+      null
+    );
+  }
+  if (!name) return null;
+  const want = name.toLowerCase();
+  return aero.apps.all.filter((a) => a.name.toLowerCase().indexOf(want) === 0)[0] || null;
 }
 
 export const bridge = {
@@ -162,8 +183,33 @@ export const bridge = {
   },
 
   /**
+   * Every app a person would open on the TV, by name, for All apps: AeroTizen's inventory in the own app (its sample
+   * list in a preview), the service's list under TizenBrew and on the fake TV. null when the TV won't list them.
+   */
+  async installedApps(): Promise<TvApp[] | null> {
+    const aero = w.AeroTizen;
+    const toTvApp = (a: { id: string; name: string }): TvApp => ({ id: a.id, name: a.name, key: keyForName(a.name) });
+    if (mode === 'app' || (mode === 'preview' && aero && aero.apps)) {
+      if (!aero || !aero.apps) return null;
+      if (!aero.apps.ready) {
+        const ok = await new Promise<boolean>((resolve) => aero.apps.load(resolve));
+        if (!ok) return null;
+      }
+      return aero.apps.all.map(toTvApp);
+    }
+    if (mode === 'preview') return null;
+    try {
+      const r = await request<{ apps: { id: string; name: string }[]; listed: boolean }>('GET', '/apps/all');
+      return r.listed ? r.apps.map(toTvApp) : null;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /**
    * Opens an app. As its own app, AeroTizen's launcher opens it and reports failures through the toast. `name` finds
-   * an app that isn't on Home's row in the TV's list (own-app mode); under TizenBrew the service knows apps by key.
+   * an app that isn't on Home's row in the TV's list (own-app mode); under TizenBrew the service knows apps by key, or
+   * by "app:" and the TV's id for any app All apps lists.
    */
   async launch(key: string, name?: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
     if (mode === 'app') {
@@ -174,7 +220,8 @@ export const bridge = {
     }
     if (mode === 'preview') return { ok: true, id: null };
     try {
-      const r = await request<{ ok: boolean; id: string | null; tried: { error: string | null }[] }>('POST', '/launch', { app: key });
+      const body = key.indexOf(APP_PREFIX) === 0 ? { id: key.slice(APP_PREFIX.length) } : { app: key };
+      const r = await request<{ ok: boolean; id: string | null; tried: { error: string | null }[] }>('POST', '/launch', body);
       const last = r.tried[r.tried.length - 1];
       return { ok: r.ok, id: r.id, error: r.ok ? undefined : (last && last.error) || 'not opened' };
     } catch (e) {

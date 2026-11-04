@@ -2,7 +2,8 @@
 // submodule vendor/hometv-launcher, docs/shared-package.md). `key` is the name service/service.js and AeroTizen's
 // glue know the app by on Samsung; it differs only where the shared package tells two services apart that are one app
 // on a Samsung (the Apple TV app and Apple's store).
-import { APP_BRAND, HOME_APPS as SHARED_HOME_APPS } from '@hometv/core/services.ts';
+import { APP_BRAND, HOME_APPS as SHARED_HOME_APPS, HOME_ROW_MAX } from '@hometv/core/services.ts';
+import { loadRow, saveRow, type RowEntry } from './homeRow';
 
 export const SAMSUNG_KEY: Record<string, string> = { appletvplus: 'appletv' };
 
@@ -32,3 +33,27 @@ export const HOME_APPS: HomeApp[] = SHARED_HOME_APPS.map((a) => {
     fg: brand ? brand.fg : '#ffffff',
   };
 });
+
+/** Home's row as All apps last left it (homeRow.ts): Home's default apps until then. */
+export const homeRow = {
+  get: (): RowEntry[] => loadRow(storage(), HOME_APPS.map((a) => ({ id: a.key, name: a.name })), HOME_ROW_MAX),
+  set: (row: RowEntry[]) => saveRow(storage(), row),
+};
+
+function storage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * The Home tile an installed app is, by its name on the TV, or null: the tile's name, maybe followed by " - " and more
+ * ("Spotify - Music and Podcasts"); "Max" is HBO Max. "YouTube Kids" is not YouTube.
+ */
+export function keyForName(name: string): string | null {
+  const n = name.toLowerCase().replace(/\s+-\s.*$/, '').trim();
+  for (const t of HOME_APPS) if (n === t.name.toLowerCase() || (t.key === 'max' && n === 'max')) return t.key;
+  return null;
+}

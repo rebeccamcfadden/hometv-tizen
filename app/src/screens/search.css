@@ -74,19 +74,7 @@
 .sb-pill > * + * {
   margin-left: 8px;
 }
-.offline-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 18px;
-  border-radius: var(--radius-pill);
-  background: rgba(var(--star-rgb), 0.12);
-  color: var(--star);
-  font-size: var(--t-small);
-  white-space: nowrap;
-}
-.offline-pill > * + * {
-  margin-left: 10px;
-}
+/* .offline-pill is in ui/widgets.css. */
 
 .search-panel {
   position: absolute;
@@ -321,10 +309,6 @@
 .state .empty-title {
   margin-top: 24px;
   font-size: var(--t-h2);
-}
-.empty-note {
-  font-size: 22px;
-  color: var(--text-2);
 }
 .state-note {
   max-width: 1000px;

@@ -1,6 +1,6 @@
-// The pieces Search and the title page share, from hometv-launcher's design_preview/src/ui/widgets.ts at 2bf3c2d:
-// buttons, chips, the C title card (F46) with its service pill, people and rows. Built for Chromium 56; posters load
-// when their card comes into view.
+// The pieces the ported screens share (Search, the title page, Movies, TV Shows, All apps, a person), from
+// hometv-launcher's design_preview/src/ui/widgets.ts at 2bf3c2d: the nav, buttons, chips, the guide line, the C title
+// card (F46) with its service pill, people and rows. Built for Chromium 56; posters load when their card comes into view.
 import type { Offer, Title } from '@hometv/core/types.ts';
 import { SERVICES } from '@hometv/core/services.ts';
 import { cardOffer } from '../data/offers';
@@ -8,9 +8,47 @@ import { posterUrl } from '../data/posters';
 import { CURRENCY } from '../data/settings';
 import { h } from '../shell/dom';
 import { focusable, type FocusOpts } from '../shell/focus';
+import { shell, type TabId } from '../shell/app';
 import { icon, type IconName } from './icons';
 import '@hometv/core/tokens.css';
 import './widgets.css';
+
+/**
+ * The page's sections (Home, Movies, TV Shows, Search). OK on one switches to it; focusing it only highlights it. OK on
+ * the page you are already on does nothing. The device icons of design_preview's nav (Wi-Fi, Inputs, quick settings)
+ * aren't ported.
+ */
+export function navBar(active: TabId | null): HTMLElement {
+  const tabs: [TabId, string][] = [
+    ['home', 'Home'],
+    ['movies', 'Movies'],
+    ['tv', 'TV Shows'],
+  ];
+  let tabsRoot: HTMLElement | null = null;
+  const section = (id: TabId, label: string | null) => {
+    const el = label
+      ? h('div.nav-tab' + (id === active ? '.is-active' : ''), label)
+      : h('div.nav-search' + (id === active ? '.is-active' : ''), { html: icon('search') });
+    const open = () => {
+      if (el.classList.contains('is-active')) return;
+      const from = shell.top();
+      shell.goTab(id, { focusNav: true });
+      // Coming back to the page we left puts focus on its own section, not on the one we switched to.
+      const own = tabsRoot && (tabsRoot.querySelector('.is-active') as HTMLElement | null);
+      if (from && own) {
+        from.lastFocus = own;
+        from.lastFocusKey = own.getAttribute('data-key') || undefined;
+        if (!from.memory) from.memory = {};
+        from.memory.nav = own;
+      }
+    };
+    return focusable(el, { group: 'nav', key: `nav-${id}`, isDefault: id === active, onOk: open });
+  };
+  tabsRoot = h('div.nav-left', h('div.nav-tabs', tabs.map(([id, label]) => section(id, label))), section('search', null));
+  return h('div.nav', tabsRoot);
+}
+
+export const guide = (left: string, right: string) => h('div.guide', h('span', left), h('span.guide-right', right));
 
 export const initials = (name: string) =>
   name

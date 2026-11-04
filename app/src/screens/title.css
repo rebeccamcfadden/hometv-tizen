@@ -14,20 +14,7 @@
 .layer-dialog * {
   box-sizing: border-box;
 }
-.scrim {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  background: rgba(5, 8, 12, 0.58);
-  animation: fade-in var(--fast) ease-out;
-}
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-}
+/* .scrim is in ui/widgets.css. */
 @keyframes rise-in {
   from {
     opacity: 0;

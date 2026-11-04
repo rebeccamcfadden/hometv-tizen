@@ -137,12 +137,17 @@ function once(ms, fn, cb) {
 function launchApp(key, cb) {
   var app = APPS[key];
   if (!app) return cb(false, null, [{ id: null, error: 'unknown app ' + key }]);
+  launchIds(app.ids, cb);
+}
+
+/** Tries each id in turn until the TV opens one. cb(ok, idThatWorked, tried). */
+function launchIds(ids, cb) {
   if (!hasTizen()) return cb(false, null, [{ id: null, error: 'no tizen object' }]);
   var tried = [];
   var i = 0;
   (function next() {
-    if (i >= app.ids.length) return cb(false, null, tried);
-    var id = app.ids[i++];
+    if (i >= ids.length) return cb(false, null, tried);
+    var id = ids[i++];
     once(
       8000,
       function (done) {
@@ -187,10 +192,39 @@ function installedApps(cb) {
       if (!ok) return cb(null, listOrError);
       var ids = {};
       for (var i = 0; i < listOrError.length; i++) ids[listOrError[i].id] = listOrError[i].name || true;
-      installedCache = { ids: ids, count: listOrError.length };
+      installedCache = { ids: ids, count: listOrError.length, apps: realApps(listOrError) };
       cb(installedCache, null);
     }
   );
+}
+
+/** Store apps have 10-character package ids; everything else the TV lists is the firmware's own (AeroTizen's rule). */
+var STORE_PACKAGE = /^[A-Za-z0-9]{10}$/;
+/** Never shown in All apps, nor opened from it: services, the manual, widgets, HomeTV's own parts. */
+var HIDDEN_APPS = /service|emanual|companion|dummy|widget|DclHome001|HmTvSpike0/i;
+/** Streaming apps a Samsung comes with, under firmware-style ids (AeroTizen's app-catalog.js, "preloaded"). */
+var PRELOADED_IDS = ['org.tizen.netflix-app', 'org.tizen.primevideo', 'com.samsung.tv.aria-video'];
+
+function isKnownId(id) {
+  if (PRELOADED_IDS.indexOf(id) >= 0) return true;
+  for (var key in APPS) if (APPS[key].ids.indexOf(id) >= 0) return true;
+  return false;
+}
+
+/** The apps a person would open, from the TV's full list, by name: what All apps shows. */
+function realApps(list) {
+  var out = [];
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    if (!a || !a.id || !a.name || a.show === false) continue;
+    if (HIDDEN_APPS.test(a.id) || HIDDEN_APPS.test(a.name)) continue;
+    if (a.packageId && !STORE_PACKAGE.test(a.packageId) && !isKnownId(a.id)) continue;
+    out.push({ id: a.id, name: a.name });
+  }
+  out.sort(function (x, y) {
+    return x.name.toLowerCase() < y.name.toLowerCase() ? -1 : x.name.toLowerCase() > y.name.toLowerCase() ? 1 : 0;
+  });
+  return out;
 }
 
 function capability(key) {
@@ -669,9 +703,28 @@ var server = http.createServer(function (req, res) {
     });
   }
 
+  // Every app a person would open (All apps), not only the known ones.
+  if (url === '/apps/all' && req.method === 'GET') {
+    return installedApps(function (inst, error) {
+      json(res, 200, { apps: inst ? inst.apps : [], listed: !!inst, error: inst ? undefined : error });
+    });
+  }
+
   if (url === '/launch' && req.method === 'POST') {
     if (!isLoopback(req)) return send(res, 403, 'text/plain', 'Only the TV itself opens apps.');
     return readBody(req, function (body) {
+      if (body && typeof body.id === 'string') {
+        // Any app All apps shows, by the TV's own id; nothing else (no firmware parts, no factory menus).
+        return installedApps(function (inst) {
+          var listed = false;
+          if (inst) for (var i = 0; i < inst.apps.length; i++) if (inst.apps[i].id === body.id) listed = true;
+          if (!listed) return json(res, 200, { ok: false, id: null, tried: [{ id: body.id, error: 'not an app this TV lists' }] });
+          launchIds([body.id], function (ok, id, tried) {
+            record('launch:' + body.id, ok, { opened: id, tried: tried });
+            json(res, 200, { ok: ok, id: id, tried: tried });
+          });
+        });
+      }
       if (!body || !body.app) return json(res, 400, { ok: false, error: 'which app?' });
       launchApp(body.app, function (ok, id, tried) {
         record('launch:' + body.app, ok, { opened: id, tried: tried });
@@ -720,4 +773,4 @@ server.on('error', function (e) {
 loadResults();
 server.listen(PORT, '0.0.0.0');
 
-module.exports = { server: server, APPS: APPS, CHECKS: CHECKS, parseFrame: parseFrame, textFrame: textFrame };
+module.exports = { server: server, APPS: APPS, CHECKS: CHECKS, parseFrame: parseFrame, textFrame: textFrame, realApps: realApps };
