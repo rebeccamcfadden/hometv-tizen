@@ -25,10 +25,11 @@ const PHONE = '192.168.1.50';
 const answers = [];
 
 /** One request: { status, headers, text, json }. `from` is the caller's address; `raw` a body sent as it is. */
-function call(method, url, { from = '127.0.0.1', code, body, raw, headers = {} } = {}) {
+function call(method, url, { from = '127.0.0.1', code, token, body, raw, headers = {} } = {}) {
   return new Promise((resolve, reject) => {
     const h = { 'X-Test-Remote': from, ...headers };
     if (code !== undefined) h.Authorization = 'Bearer ' + code;
+    if (token !== undefined) h['X-HomeTV-Token'] = token;
     let data = raw;
     if (body !== undefined) {
       data = JSON.stringify(body);
@@ -56,7 +57,9 @@ function call(method, url, { from = '127.0.0.1', code, body, raw, headers = {} }
   });
 }
 
-const tv = (url, body) => call(body === undefined && !/hold|release|code|recheck/.test(url) ? 'GET' : 'POST', url, { body });
+/** The TV screen's token, as the service wrote it to the private folder (the screen reads it there). */
+const TOKEN = fs.readFileSync(path.join(dataDir, rules.TOKEN_FILE), 'utf8');
+const tv = (url, body) => call(body === undefined && !/hold|release|code|recheck/.test(url) ? 'GET' : 'POST', url, { body, token: TOKEN });
 const hold = () => tv('/tv/keys/hold', {});
 const code = async () => (await tv('/tv/keys')).json.code;
 const send = (id, key, c) => call('POST', '/keys', { from: PHONE, code: c, body: { id, key } });
@@ -101,7 +104,7 @@ test('the TV’s routes answer the TV only: loopback, and not a web page', async
   assert.equal((await call('POST', '/tv/keys/hold', { from: PHONE })).status, 403);
   assert.equal((await call('GET', '/tv/keys', { headers: { Origin: 'https://example.com' } })).status, 403);
   assert.equal((await call('GET', '/tv/keys', { headers: { Origin: 'http://192.168.1.50:8080' } })).status, 403);
-  const app = await call('GET', '/tv/keys', { headers: { Origin: 'null' } });
+  const app = await call('GET', '/tv/keys', { token: TOKEN, headers: { Origin: 'null' } });
   assert.equal(app.status, 200);
   assert.equal(app.headers['access-control-allow-origin'], 'null');
   // On the TV (no dev flag) only the packaged page's origins; a TizenBrew module's http://127.0.0.1:8081 is refused.
@@ -112,6 +115,50 @@ test('the TV’s routes answer the TV only: loopback, and not a web page', async
   assert.equal(rules.trustedOrigin('http://localhost:5180', false), false);
   assert.equal(rules.trustedOrigin('http://localhost:5180', true), true);
   assert.equal(rules.trustedOrigin('http://localhost.example.com', true), false);
+});
+
+test('every TV route wants the token from the private folder, whatever the Origin', async () => {
+  assert.equal(TOKEN, dev.instance.tvToken());
+  assert.match(TOKEN, /^[0-9a-f]{48}$/);
+  if (process.platform !== 'win32') assert.equal(fs.statSync(path.join(dataDir, rules.TOKEN_FILE)).mode & 0o777, 0o600);
+  const routes = [['GET', '/tv/keys'], ['POST', '/tv/keys/hold'], ['POST', '/tv/keys/release'], ['POST', '/tv/keys/code'], ['POST', '/tv/keys/recheck']];
+  const before = await code();
+  for (const [method, url] of routes) {
+    // No token, a wrong one, and a sandboxed web page's "null" Origin without one: all refused.
+    for (const opts of [{}, { token: 'f'.repeat(48) }, { token: '' }, { headers: { Origin: 'null' } }, { token: TOKEN.slice(0, -1) }]) {
+      const r = await call(method, url, { ...opts, body: method === 'POST' ? {} : undefined });
+      assert.equal(r.status, 403, `${method} ${url} ${JSON.stringify(opts)}`);
+      assert.ok(!r.text.includes(before) && !r.text.includes(TOKEN));
+    }
+  }
+  assert.equal(await code(), before, 'a refused New code changed nothing');
+  // The browser's question before a request with the token is answered, without the token and without the code.
+  const pre = await call('OPTIONS', '/tv/keys', { headers: { Origin: 'null', 'Access-Control-Request-Headers': 'x-hometv-token' } });
+  assert.equal(pre.status, 204);
+  assert.match(pre.headers['access-control-allow-headers'], /X-HomeTV-Token/i);
+  assert.equal(pre.text, '');
+  // /ping only says the service is here.
+  const ping = await call('GET', '/ping');
+  assert.deepEqual(Object.keys(ping.json).sort(), ['ok', 'service', 'version']);
+});
+
+test('a service that can’t write the token keeps the TV’s routes shut', async () => {
+  const blocked = path.join(dataDir, 'not-a-folder');
+  fs.writeFileSync(blocked, '');
+  const inst = dev.pages.create({ port: 0, dataDir: blocked });
+  await new Promise((resolve, reject) => inst.start((e) => (e ? reject(e) : resolve())));
+  try {
+    const r = await new Promise((resolve, reject) => {
+      http.get({ host: '127.0.0.1', port: inst.port(), path: '/tv/keys', headers: { 'X-HomeTV-Token': '' } }, (res) => {
+        res.resume();
+        resolve(res.statusCode);
+      }).on('error', reject);
+    });
+    assert.equal(r, 403);
+    assert.equal(inst.tvToken(), '');
+  } finally {
+    inst.stop();
+  }
 });
 
 test('key routes are closed until the TV’s screen holds them, and close when it lets go', async () => {
@@ -230,7 +277,7 @@ test('a request that trickles in is cut at the deadline', async () => {
 test('a name pointed at the TV (DNS rebinding) is refused; the address itself is not', async () => {
   assert.equal((await call('GET', '/tv/keys', { headers: { Host: `attacker.example:${dev.port}` } })).status, 403);
   assert.equal((await call('GET', '/ping', { headers: { Host: `127.0.0.1:${dev.port + 1}` } })).status, 403);
-  assert.equal((await call('GET', '/tv/keys', { headers: { Host: `localhost:${dev.port}` } })).status, 200);
+  assert.equal((await call('GET', '/tv/keys', { token: TOKEN, headers: { Host: `localhost:${dev.port}` } })).status, 200);
   assert.equal((await call('GET', '/keys', { from: PHONE, headers: { Host: `tv.attacker.example:${dev.port}` } })).status, 403);
   assert.equal((await call('GET', '/keys', { from: PHONE, headers: { Host: `192.168.1.40:${dev.port}` } })).status, 200);
   // The TV's routes want loopback in the Host too, not the TV's home address.
@@ -245,14 +292,19 @@ test('a port another service holds is reported, so the service can try again', a
   const blocker = http.createServer();
   await new Promise((r) => blocker.listen(0, r));
   const taken = blocker.address().port;
-  const inst = dev.pages.create({ port: taken, dataDir });
+  const fresh = fs.mkdtempSync(path.join(os.tmpdir(), 'hometv-pages-taken-'));
+  const inst = dev.pages.create({ port: taken, dataDir: fresh });
   const err = await new Promise((r) => inst.start(r));
   assert.equal(err && err.code, 'EADDRINUSE');
+  // No token for a service that doesn't hold the port: whoever does can't get one that opens it later.
+  assert.equal(fs.existsSync(path.join(fresh, rules.TOKEN_FILE)), false);
   inst.stop();
   await new Promise((r) => blocker.close(r));
-  const again = dev.pages.create({ port: taken, dataDir });
+  const again = dev.pages.create({ port: taken, dataDir: fresh });
   assert.equal(await new Promise((r) => again.start(r)), null);
+  assert.equal(fs.readFileSync(path.join(fresh, rules.TOKEN_FILE), 'utf8'), again.tvToken());
   again.stop();
+  fs.rmSync(fresh, { recursive: true, force: true });
 });
 
 test('a new code: the old one stops working', async () => {
@@ -276,7 +328,7 @@ test('the keys and the code survive a restart, in the private file', async () =>
   await new Promise((resolve, reject) => again.start((e) => (e ? reject(e) : resolve())));
   try {
     const s = await new Promise((resolve, reject) => {
-      http.get({ host: '127.0.0.1', port: again.port(), path: '/tv/keys' }, (res) => {
+      http.get({ host: '127.0.0.1', port: again.port(), path: '/tv/keys', headers: { 'X-HomeTV-Token': again.tvToken() } }, (res) => {
         let t = '';
         res.on('data', (d) => (t += d));
         res.on('end', () => resolve(JSON.parse(t)));
@@ -284,6 +336,8 @@ test('the keys and the code survive a restart, in the private file', async () =>
     });
     assert.equal(s.code, c);
     assert.deepEqual(s.keys.tmdb, { state: 'ok', last4: 'ABCD' });
+    // A new token each start: the old one no longer opens the TV's routes.
+    assert.notEqual(again.tvToken(), dev.instance.tvToken());
   } finally {
     again.stop();
   }

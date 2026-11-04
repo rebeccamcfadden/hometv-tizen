@@ -98,7 +98,10 @@ So for now **Watch on** opens the service's app, and whether to look further or 
   on all addresses and a phone reaches it, that the TV's Node checks TMDB's and the others' HTTPS certificates (an
   old Node's certificate list may not know theirs: the key is then kept as "not checked"), and the Origin the
   packaged page sends (the TV's routes trust "null" and `file://`, as AeroTizen's watcher does, and want a loopback
-  Host, against DNS rebinding; a web page that hides in a sandboxed frame sends "null" too).
+  Host, against DNS rebinding). A web page that hides in a sandboxed frame sends "null" too, so every `/tv/` route
+  also wants a token the service writes to `wgt-private` at each start (`hometv-pages-tv-token`, 0600), which the
+  screen reads with `tizen.filesystem` (`openFile`, or the older `resolve` before Tizen 5.0). To learn on the TV: that
+  the page can read what the service wrote there.
 
 ## 3. What TizenBrew needs on the TV
 

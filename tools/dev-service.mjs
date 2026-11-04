@@ -78,6 +78,28 @@ export async function startDevPages({ port = 8767, dataDir = path.join(root, '.d
   };
 }
 
+/**
+ * The dev page's way to the pages service's token (on the TV the screen reads it from the app's private folder):
+ * GET /__hometv/pages-token on the dev server. Same-origin only: another site in the PC's browser can't read it.
+ */
+export function pagesTokenPlugin(pages) {
+  return {
+    name: 'hometv-pages-token',
+    configureServer(server) {
+      server.middlewares.use('/__hometv/pages-token', (req, res) => {
+        // Before Vite's own CORS answer, so no other site may read it; and only by the PC's own name (no rebinding).
+        if (!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(String(req.headers.host || ''))) {
+          res.statusCode = 403;
+          return res.end();
+        }
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(pages.instance.tvToken());
+      });
+    },
+  };
+}
+
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const dev = await startDevService({ log: (s) => console.log(`[fake TV] ${s}`) });
   console.log(`HomeTV service (fake TV) on http://127.0.0.1:${dev.port}  · report: http://127.0.0.1:${dev.port}/report`);

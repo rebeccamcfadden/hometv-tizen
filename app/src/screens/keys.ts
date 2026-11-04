@@ -5,7 +5,8 @@
 //
 // While it shows, it holds the service's key routes open (POST /tv/keys/hold every few seconds, as the Android
 // launcher's pane holds its KeyInbox); when it goes, or HomeTV goes to the background, it lets go and the page on the
-// phone stops taking keys. It talks to the service on loopback only.
+// phone stops taking keys. It talks to the service on loopback only, with the token the service leaves in the app's
+// private folder (its TOKEN_FILE): a web page on the TV can't read that folder, so it can't use the screen's routes.
 
 import { h, replace } from '../shell/dom';
 import { focusable } from '../shell/focus';
@@ -14,8 +15,13 @@ import { encodeQr, dark } from '../qr';
 import { KEY_INFO, keyStatus, keysValue, type KeyEntry, type KeyId } from '../keyWords';
 import { topBar } from './home';
 
-/** The service's port on the TV, then on a PC (`npm run dev`, where the TizenBrew module's service has 8766). */
-const PORTS = [8766, 8767];
+/** The service's port on the TV. */
+const TV_PORT = 8766;
+/**
+ * On a PC (`npm run dev`) the TizenBrew module's fake service has 8766, so the pages service is on 8767. Never tried on
+ * the TV: another program could listen there and collect the token the screen sends.
+ */
+const DEV_PORT = 8767;
 const SERVICE_ID = 'HmTvSpike0.HomeTVPages';
 /** Under the service's own hold (15 s), so a slow answer never lets the routes close while the screen shows. */
 const HOLD_EVERY_MS = 3000;
@@ -41,28 +47,88 @@ type Tz = {
   systeminfo?: {
     getPropertyValue(p: string, ok: (v: { ipAddress?: string }) => void, err?: () => void): void;
   };
+  filesystem?: {
+    /** Tizen 5.0 and newer. */
+    openFile?(path: string, mode: 'r'): { readString(): string; close(): void };
+    /** Older, and deprecated from Tizen 5.0. */
+    resolve?(path: string, ok: (f: TizenFile) => void, err: () => void, mode: 'r'): void;
+  };
 };
+interface TizenFile {
+  readAsText(ok: (text: string) => void, err: () => void, encoding: string): void;
+}
+
+/** The service's TOKEN_FILE, in the app's private folder (service/pages.js). */
+const TOKEN_FILE = 'wgt-private/hometv-pages-tv-token';
 const tz = (): Tz | null => (window as unknown as { tizen?: Tz }).tizen || null;
 
-/** XMLHttpRequest with a timeout (Chromium 56 has no AbortController). */
-function request<T>(base: string, method: 'GET' | 'POST', path: string, body?: unknown, timeoutMs = 4000): Promise<T> {
+type HttpError = Error & { status?: number };
+
+/** XMLHttpRequest with a timeout (Chromium 56 has no AbortController); `token` for the service's /tv/ routes. */
+function request<T>(base: string, method: 'GET' | 'POST', path: string, body?: unknown, timeoutMs = 4000, token?: string): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open(method, base + path);
     xhr.timeout = timeoutMs;
+    const fail = (message: string) => {
+      const e: HttpError = new Error(message);
+      e.status = xhr.status;
+      reject(e);
+    };
     xhr.onload = () => {
       try {
         const j = JSON.parse(xhr.responseText);
         if (xhr.status >= 200 && xhr.status < 300) resolve(j as T);
-        else reject(new Error((j && j.message) || `HTTP ${xhr.status}`));
+        else fail((j && j.message) || `HTTP ${xhr.status}`);
       } catch (e) {
-        reject(new Error(`HTTP ${xhr.status}`));
+        fail(`HTTP ${xhr.status}`);
       }
     };
     xhr.onerror = () => reject(new Error('no answer'));
     xhr.ontimeout = () => reject(new Error('timed out'));
     if (body !== undefined) xhr.setRequestHeader('Content-Type', 'application/json');
+    if (token !== undefined) xhr.setRequestHeader('X-HomeTV-Token', token);
     xhr.send(body === undefined ? null : JSON.stringify(body));
+  });
+}
+
+/**
+ * The screen's token: on the TV from the app's private folder, which only HomeTV can read; on a PC (`npm run dev`)
+ * from the dev server, which has it from the service it started. "" when it can't be read.
+ */
+function readToken(): Promise<string> {
+  const t = tz();
+  const fsys = t && t.filesystem;
+  if (!fsys) {
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', '/__hometv/pages-token');
+      xhr.timeout = 1500;
+      xhr.onload = () => resolve(xhr.status === 200 ? xhr.responseText.trim() : '');
+      xhr.onerror = xhr.ontimeout = () => resolve('');
+      xhr.send();
+    });
+  }
+  if (fsys.openFile) {
+    try {
+      const file = fsys.openFile(TOKEN_FILE, 'r');
+      try {
+        return Promise.resolve(file.readString().trim());
+      } finally {
+        file.close();
+      }
+    } catch (e) {
+      // Not there yet, or this TV only has the older calls below.
+    }
+  }
+  return new Promise((resolve) => {
+    if (!fsys.resolve) return resolve('');
+    try {
+      fsys.resolve(TOKEN_FILE, (f) => f.readAsText((text) => resolve(String(text || '').trim()), () => resolve(''), 'UTF-8'), () => resolve(''), 'r');
+    } catch (e) {
+      resolve('');
+    }
+    setTimeout(() => resolve(''), 2000);
   });
 }
 
@@ -75,12 +141,12 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function findService(): Promise<{ base: string } | { problem: string }> {
   let taken = false;
   for (let attempt = 0; attempt < 6; attempt++) {
-    for (const port of PORTS) {
+    for (const port of tz() ? [TV_PORT] : [TV_PORT, DEV_PORT]) {
       const base = `http://127.0.0.1:${port}`;
       try {
         const p = await request<Ping>(base, 'GET', '/ping', undefined, 1200);
         if (p.service === 'hometv-pages') return { base };
-        if (port === PORTS[0]) taken = true;
+        if (port === TV_PORT) taken = true;
       } catch (e) {
         // Not there.
       }
@@ -162,6 +228,9 @@ export function showKeys() {
   const rows: Record<string, { el: HTMLElement; status: HTMLElement }> = {};
   const list = h('div.keyrows');
   let base = '';
+  let token = '';
+  /** The service took the token at least once. */
+  let accepted = false;
   let state: TvKeys | null = null;
   let fallbackAddress = '';
   let askedTv = false;
@@ -225,14 +294,36 @@ export function showKeys() {
     note.textContent = text;
   }
 
+  /**
+   * A call to the service's TV routes. Refused after it once took the token, the token is read again once: the
+   * service restarted with a new one. One that never took it isn't sent another.
+   */
+  async function tvCall(path: string, body?: unknown): Promise<TvKeys> {
+    try {
+      const r = await request<TvKeys>(base, 'POST', path, body, 4000, token);
+      accepted = true;
+      return r;
+    } catch (e) {
+      if ((e as HttpError).status !== 403 || !accepted) throw e;
+      accepted = false;
+      token = await readToken();
+      return tvCall(path, body);
+    }
+  }
+
   async function tick() {
     if (!alive || !base) return;
     if (!document.hidden) {
       try {
-        state = await request<TvKeys>(base, 'POST', '/tv/keys/hold');
+        state = await tvCall('/tv/keys/hold');
         if (alive) paint();
       } catch (e) {
-        if (alive) problem('The key service stopped answering. Back, then open API keys again.');
+        if (!alive) return;
+        problem(
+          (e as HttpError).status === 403
+            ? 'HomeTV couldn’t read its key service’s pass in its private folder. Back, then open API keys again.'
+            : 'The key service stopped answering. Back, then open API keys again.',
+        );
       }
     }
     if (alive) timer = window.setTimeout(tick, HOLD_EVERY_MS);
@@ -242,7 +333,7 @@ export function showKeys() {
     if (!base || !state) return;
     if (state.keys[id].state === 'unset') return shell.toast('No key yet. Send one from the phone page.');
     try {
-      state = await request<TvKeys>(base, 'POST', '/tv/keys/recheck', { id });
+      state = await tvCall('/tv/keys/recheck', { id });
       paint();
     } catch (e) {
       shell.toast('The key service didn’t answer.', true);
@@ -252,7 +343,7 @@ export function showKeys() {
   async function fresh() {
     if (!base) return;
     try {
-      state = await request<TvKeys>(base, 'POST', '/tv/keys/code');
+      state = await tvCall('/tv/keys/code');
       paint();
       shell.toast('New code. Scan the QR again on the phone.');
     } catch (e) {
@@ -263,7 +354,7 @@ export function showKeys() {
   function release() {
     window.clearTimeout(timer);
     timer = 0;
-    if (base) request(base, 'POST', '/tv/keys/release').catch(() => undefined);
+    if (base) request(base, 'POST', '/tv/keys/release', undefined, 4000, token).catch(() => undefined);
   }
 
   // HomeTV in the background (another app, standby): let go now; back in front, hold again.
@@ -290,7 +381,11 @@ export function showKeys() {
     if (!alive) return;
     if ('problem' in found) return problem(found.problem);
     base = found.base;
-    note.textContent = '';
-    tick();
+    readToken().then((t) => {
+      token = t;
+      if (!alive) return;
+      note.textContent = '';
+      tick();
+    });
   });
 }

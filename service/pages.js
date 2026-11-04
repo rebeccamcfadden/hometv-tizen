@@ -13,8 +13,9 @@
  * key routes answer only while the TV shows its API keys screen (it holds them open, below). Nothing is logged: the
  * body is a key. Keys live in the app's private folder (wgt-private), readable by this app only, never in git.
  *
- * The TV's own screen talks to it on loopback only (and only from the app itself, not from a web page):
- *   GET /ping, GET /tv/keys (the code, address and states), POST /tv/keys/hold (open for 15 s more; the screen repeats it),
+ * The TV's own screen talks to it on loopback only, from the app itself, with the token from the app's private folder
+ * (TOKEN_FILE; every /tv/ route refuses a request without it, whatever its Origin):
+ *   GET /ping (no token: only says the service is here), GET /tv/keys (the code, address and states), POST /tv/keys/hold (open for 15 s more; the screen repeats it),
  *   POST /tv/keys/release, POST /tv/keys/code (a new code), POST /tv/keys/recheck {"id"}.
  *
  * Each key is checked with one free request to its service (KeyRules.check): 2xx works, 401/403 refused, anything else
@@ -41,6 +42,12 @@ var REQUEST_DEADLINE_MS = 10000;
 var HOLD_MS = 15000;
 var CHECK_MS = 8000;
 var STORE_FILE = 'hometv-keys-v1.json';
+/**
+ * The TV screen's token, made afresh each time the service starts and written beside the keys: every /tv/ route wants
+ * it (X-HomeTV-Token), and only HomeTV's own page can read the app's private folder to learn it.
+ */
+var TOKEN_FILE = 'hometv-pages-tv-token';
+var TOKEN_HEADER = 'x-hometv-token';
 /** Letters and digits that can't be mistaken for each other when typed off a TV: no 0/O, 1/I/L. */
 var CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 
@@ -217,8 +224,8 @@ function isLoopbackHost(host, port) {
  * The TV's own screen, not a web page: HomeTV's packaged page sends no Origin, "null", file:// or the app's own
  * scheme (as AeroTizen's watcher trusts it). A web page opened in the TV's browser, or a TizenBrew module
  * (http://127.0.0.1:8081), has an http(s) origin and is refused, so it can't read the code. With `dev` (the PC's
- * `npm run dev` only) the page on http://localhost is let in too. Not covered: a page that hides itself in a sandboxed
- * frame, whose Origin is "null" too (docs/research.md, section 2).
+ * `npm run dev` only) the page on http://localhost is let in too. A page that hides itself in a sandboxed frame sends
+ * "null" too: the token (TOKEN_FILE) is what keeps it out.
  */
 function trustedOrigin(origin, dev) {
   if (!origin) return true;
@@ -253,7 +260,35 @@ function homeAddresses() {
 
 // ---------------------------------------------------------------- the private file
 
-/** Reads and writes the keys' file in `dir`: only this app's user may read it (0600), written whole or not at all. */
+/** Writes `text` to `file` whole or not at all, readable by this app's user only (0600). True when it's on disk. */
+function writeWhole(file, text) {
+  var temporary = file + '.' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
+  var ok = false;
+  try {
+    var fd = fs.openSync(temporary, 'wx', 384);
+    try {
+      fs.writeSync(fd, text);
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+    fs.renameSync(temporary, file);
+    ok = true;
+  } catch (e) {
+    ok = false;
+  }
+  try {
+    fs.unlinkSync(temporary);
+  } catch (e) {
+    // Renamed already, or never made.
+  }
+  return ok;
+}
+
+/**
+ * The keys' file in `dir`, and the TV screen's token beside it (TOKEN_FILE): only this app may read the folder, so
+ * only HomeTV's own page can learn the token, not a web page or another app.
+ */
 function fileStore(dir) {
   var file = path.join(dir, STORE_FILE);
   return {
@@ -266,27 +301,10 @@ function fileStore(dir) {
       }
     },
     write: function (data) {
-      var temporary = file + '.' + Date.now() + '-' + crypto.randomBytes(4).toString('hex');
-      var ok = false;
-      try {
-        var fd = fs.openSync(temporary, 'wx', 384);
-        try {
-          fs.writeSync(fd, JSON.stringify(data));
-          fs.fsyncSync(fd);
-        } finally {
-          fs.closeSync(fd);
-        }
-        fs.renameSync(temporary, file);
-        ok = true;
-      } catch (e) {
-        ok = false;
-      }
-      try {
-        fs.unlinkSync(temporary);
-      } catch (e) {
-        // Renamed already, or never made.
-      }
-      return ok;
+      return writeWhole(file, JSON.stringify(data));
+    },
+    writeToken: function (token) {
+      return writeWhole(path.join(dir, TOKEN_FILE), token);
     }
   };
 }
@@ -339,6 +357,7 @@ function create(opts) {
   var wrong = 0;
   var lockedUntil = 0;
   var heldUntil = 0;
+  var tvToken = crypto.randomBytes(24).toString('hex');
 
   function blank() {
     return { code: '', keys: { tmdb: { key: '', state: '' }, watchmode: { key: '', state: '' }, motn: { key: '', state: '' } } };
@@ -621,13 +640,21 @@ function create(opts) {
     var origin = req.headers.origin;
     if (!trustedOrigin(origin, !!opts.devOrigins)) return fail(res, 403, MSG.tvOnly);
     var cors = origin
-      ? { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Allow-Headers': 'Content-Type', Vary: 'Origin' }
+      ? {
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Methods': 'GET, POST',
+          'Access-Control-Allow-Headers': 'Content-Type, X-HomeTV-Token',
+          Vary: 'Origin'
+        }
       : {};
     if (req.method === 'OPTIONS') {
+      // The browser's question before a request with the token: it carries no token itself, and learns nothing.
       res.writeHead(204, cors);
       return res.end();
     }
+    // Only says the service is here, so the screen can find it before it has read the token.
     if (req.method === 'GET' && url === '/ping') return reply(res, 200, { ok: true, service: 'hometv-pages', version: VERSION }, cors);
+    if (!sameCode(String(req.headers[TOKEN_HEADER] || ''), tvToken)) return fail(res, 403, MSG.tvOnly, cors);
     if (req.method === 'GET' && url === '/tv/keys') return reply(res, 200, tvState(), cors);
     if (req.method !== 'POST') return fail(res, 404, MSG.notFound, cors);
     readBody(req, res, cors, function (text) {
@@ -714,6 +741,10 @@ function create(opts) {
         // Another service may hold the port (the TizenBrew module's uses 8766 too): the caller tries again later.
         server.once('error', cb);
         server.listen(port, function () {
+          // Written once this service holds the port, never before: a program that took the port first can't trick
+          // the TV's screen into handing it a token that will open this service. No private folder, or it can't be
+          // written: no page can learn the token, so the TV's routes stay shut.
+          if (!store || !store.writeToken(tvToken)) tvToken = '';
           cb(null);
         });
       }
@@ -738,6 +769,10 @@ function create(opts) {
     },
     port: function () {
       return server.address() ? server.address().port : port;
+    },
+    /** For the PC's dev page only (tools/dev.mjs), which has no private folder to read it from. */
+    tvToken: function () {
+      return tvToken;
     }
   };
 }
@@ -788,6 +823,7 @@ module.exports = {
     isAddressHost: isAddressHost,
     isLoopbackHost: isLoopbackHost,
     CODE_ALPHABET: CODE_ALPHABET,
+    TOKEN_FILE: TOKEN_FILE,
     MAX_BODY: MAX_BODY,
     MAX_KEY: MAX_KEY,
     MAX_WRONG: MAX_WRONG,
