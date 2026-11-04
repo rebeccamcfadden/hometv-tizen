@@ -20,12 +20,12 @@ Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off), [docs/
 | Path | What it is |
 |---|---|
 | `package.json` | The module as TizenBrew reads it: `packageType: app`, `appPath`, `serviceFile`, the remote keys to register. |
-| `app/` | The page: Home's app row and the Checks screen for the TV call. TypeScript and Vite, built for Chromium 56 (2018 Samsungs). `app/aero-glue.js` connects AeroTizen's scripts to it. |
+| `app/` | The page: Home's app row and the Checks screen for the TV call. TypeScript and Vite, built for Chromium 56 (2018 Samsungs). `app/aero-glue.js` connects AeroTizen's scripts to it. `app/loader/` is the installed app's shell: it shows the newest signed page the TV has and fetches newer ones ([docs/page-updates.md](docs/page-updates.md)). |
 | `service/service.js` | The service: opens apps (`tizen.application.launch`), lists them, runs the spike's checks, serves `/report` to a phone. Plain ES5 for Node 4.4.3. |
-| `tools/` | The fake TV for a PC (`mock-tizen.mjs`, `fake-samsung.mjs`, `dev-service.mjs`), the dev runner, the old-engine check, the emulator packaging. |
-| `tizen/` | HomeTV as its own Samsung app: `config.xml`; `tools/package-tizen.mjs` adds the page and AeroTizen's Home watcher (its app id and port changed) and signs it. |
+| `tools/` | The fake TV for a PC (`mock-tizen.mjs`, `fake-samsung.mjs`, `dev-service.mjs`), the dev runner, the old-engine check, the emulator packaging, and page updates (`page-build`, `page-key`, `page-release`, `page-serve`). |
+| `tizen/` | HomeTV as its own Samsung app: `config.xml`, and `page-keys.txt` (the public keys a downloaded page must be signed with); `tools/package-tizen.mjs` adds the page and AeroTizen's Home watcher (its app id and port changed) and signs it. |
 | `vendor/aerotizen/` | AeroTizen, unmodified (`git subtree`, squashed, from `093c2d5`). Update: `git subtree pull --prefix vendor/aerotizen https://github.com/helalaou/AeroTizen.git main --squash`. |
-| `tests/` | `npm test`: the service against the fake TV, and the old-engine check. |
+| `tests/` | `npm test`: the service against the fake TV, the old-engine check, and page updates on a fake TV page (`fake-browser.mjs`). |
 
 ## Try it on a PC
 
