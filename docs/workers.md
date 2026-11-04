@@ -1,6 +1,6 @@
 # Workers on HomeTV for Samsung: the shared brief
 
-You are a worker for **builder-4** (the Samsung/Tizen lead, project session `5126fd9b-23b7-4a98-a5ec-e171c994ba90`),
+You are a worker for **builder-4** (the Samsung/Tizen lead),
 in the HomeTV project. Rebecca (@rebeccamcfadden) owns the project. Report only to builder-4 with
 `send_session_message`; never ask Rebecca directly and never assume an answer she hasn't written down.
 
@@ -30,8 +30,8 @@ in the HomeTV project. Rebecca (@rebeccamcfadden) owns the project. Report only 
 5. **Checks before you report:** `npm run build` (includes the old-engine check) and `npm test` pass; new logic has
    tests against the fake TV; run a background `code-review` agent on your diff (`git diff main...HEAD`) and fix what's
    real.
-6. **Commits:** `area: what changed` titles; author Rebecca McFadden <rebecca.mcfadden16@gmail.com> (already the repo's
-   config); end each message with `Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>`. Commit
+6. **Commits:** `area: what changed` titles; the author is already the repo's config;
+   end each message with `Co-authored-by: Copilot App <223556219+Copilot@users.noreply.github.com>`. Commit
    at least every 30 minutes, on your own branch in your own git worktree (builder-4 gives you both). **Don't push**:
    builder-4 reviews your commits, runs them on the emulator, merges into `main` and pushes.
 7. **Report** when done or blocked: branch, head commit, what changed, what you checked, open questions. Keep it short.

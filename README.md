@@ -1,34 +1,38 @@
-# HomeTV for Samsung TVs (spike)
+# HomeTV for Samsung TVs
+
+> ⚠ **Work in progress, not tested on a real TV.** Don't install it unless you're helping test it.
 
 HomeTV's launcher, for Samsung TVs. Samsung TVs run Tizen, not Android, so the
-[Android launcher](https://github.com/rebeccamcfadden/hometv-launcher) can't go on them. This is a
-[TizenBrew](https://github.com/reisxd/TizenBrew) application module: a web page TizenBrew loads from npm, plus a small
-"service" that TizenBrew runs in the background and that keeps the TV's own functions (opening apps).
+[Android launcher](https://github.com/rebeccamcfadden/hometv-launcher) can't go on them. This is HomeTV as **its own
+Samsung app**: a web page (`app/`) with background services (`service/`), installed once from a laptop in the TV's
+Developer Mode. A TizenBrew module is the fallback.
 
 **Built on [AeroTizen](https://github.com/helalaou/AeroTizen) by Hamza El Alaoui** (MIT), kept unmodified in
 `vendor/aerotizen/`: its install tool, certificate step and Home helper are what HomeTV uses on Samsung
 ([docs/aerotizen-plan.md](docs/aerotizen-plan.md)). Its licence is in [LICENSE](LICENSE) and `vendor/aerotizen/LICENSE`.
+The shared logic comes from hometv-launcher's `packages/core` (MIT), a submodule.
 
-**Status: a spike.** It answers whether this can work before anything is built for real. What we know so far:
-[docs/research.md](docs/research.md). The first call with a real TV: [docs/tv-call-checklist.md](docs/tv-call-checklist.md).
-Sharing logic with the Android launcher's prototype: [docs/shared-package.md](docs/shared-package.md).
-Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off), [docs/launcher-replacement.md](docs/launcher-replacement.md)
-(how far a home screen can replace Samsung's), [docs/jailbreak.md](docs/jailbreak.md) (the options, safest first).
+**Status:** built and checked on Samsung's TV emulator and a PC with a fake TV; never run on a real TV yet. The plan
+by version: [docs/versions.md](docs/versions.md). What we know so far: [docs/research.md](docs/research.md). The first
+call with a real TV: [docs/tv-call-checklist.md](docs/tv-call-checklist.md). How another TV's port shares the screens:
+[docs/platform.md](docs/platform.md). Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off),
+[docs/launcher-replacement.md](docs/launcher-replacement.md) (how far a home screen can replace Samsung's),
+[docs/jailbreak.md](docs/jailbreak.md) (the options, safest first).
 
 ## What's here
 
 | Path | What it is |
 |---|---|
-| `package.json` | The module as TizenBrew reads it: `packageType: app`, `appPath`, `serviceFile`, the remote keys to register. |
-The keyboard stands in for the remote: arrows, Enter for OK (held down: the hold-OK menu, as in All apps), Esc or
-Backspace for Back, C (the Blue or Info key on the remote) for the Checks screen. On Search (the magnifier at the top
-of Home, or in the nav) letters and digits type, as the on-screen keyboard does. The pill at the top says where it
-runs: **On the TV**, **Fake TV on this PC**,
+| `app/` | The page: TypeScript, built for Chromium 56 (2018 Samsungs). `src/shell/` (screen stack, focus, keys), `src/screens/`, `src/bridge.ts` + `src/platform.ts` (every call to the TV: [docs/platform.md](docs/platform.md)), `loader/` (signed page updates, [docs/page-updates.md](docs/page-updates.md)), `aero-glue.js` (AeroTizen's scripts). |
+| `service/service.js` | The TizenBrew module's service: opens apps, lists them, runs the TV-call checks. Plain ES5 (Node 4 on old TVs). |
 | `service/pages.js` | The own app's second service: the API keys page (`keys-page.html`) a phone opens from the QR on HomeTV's API keys screen, on port 8766, home network only. It checks each key with one free request and keeps it in the app's private folder. Plain ES5. |
+| `package.json` | The build, and the module as TizenBrew reads it: `packageType: app`, `appPath`, `serviceFile`, the remote keys to register. |
 | `tools/` | The fake TV for a PC (`mock-tizen.mjs`, `fake-samsung.mjs`, `fake-keys.mjs`, `dev-service.mjs`), the dev runner, the old-engine check, the emulator packaging, and page updates (`page-build`, `page-key`, `page-release`, `page-serve`). |
 | `tizen/` | HomeTV as its own Samsung app: `config.xml`, and `page-keys.txt` (the public keys a downloaded page must be signed with); `tools/package-tizen.mjs` adds the page, AeroTizen's Home watcher (its app id and port changed) and the pages service, and signs it. |
 | `vendor/aerotizen/` | AeroTizen, unmodified (`git subtree`, squashed, from `093c2d5`). Update: `git subtree pull --prefix vendor/aerotizen https://github.com/helalaou/AeroTizen.git main --squash`. |
-| `tests/` | `npm test`: the service against the fake TV, the old-engine check, page updates on a fake TV page (`fake-browser.mjs`), and the page's own rules (Search, the offers, title links) bundled from TypeScript (`ts-module.mjs`). |
+| `vendor/hometv-launcher/` | Submodule: hometv-launcher, for `packages/core` (`@hometv/core`). |
+| `vendor/tweetnacl/` | TweetNaCl.js 1.0.3 (public domain), for checking page updates' signatures. |
+| `tests/` | `npm test`: the service against the fake TV, the old-engine check, page updates on a fake TV page (`fake-browser.mjs`), the platform boundary, and the page's own rules bundled from TypeScript (`ts-module.mjs`). |
 
 ## Try it on a PC
 
@@ -77,5 +81,6 @@ Certificates stay in Tizen Studio's data folder, never in git.
 
 ## How it reaches a TV
 
-TizenBrew fetches the module from npm (through jsDelivr) each time it opens, so publishing to npm is the release.
-Nothing is published yet; the package name and account are still to be decided.
+As its own app: installed from a laptop with AeroTizen's tool, once per TV, in Developer Mode; later versions arrive as
+signed page updates (off for now). As a TizenBrew module (the fallback): TizenBrew fetches it from npm through
+jsDelivr each time it opens. Nothing is published yet.
