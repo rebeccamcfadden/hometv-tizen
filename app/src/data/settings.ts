@@ -1,6 +1,6 @@
 // TEMPORARY Samsung stand-in for hometv-launcher's design_preview/src/core/settings.ts at 2bf3c2d, only the parts
 // data/offers.ts reads, until the offers take the household's choices as arguments in @hometv/core. Changes: one
-// region (Rebecca, 2026-11-04 19:30: one region, no region switch; which one isn't decided, so this uses Sweden,
+// region (decided 2026-11-04: one region, no region switch; which one isn't decided, so this uses Sweden,
 // design_preview's default, as a stand-in),
 // and nothing saved: Samsung has no Launcher settings yet, so the defaults are design_preview's first-run ticks.
 // `set` exists for the tests and changes this visit only.

@@ -1,11 +1,11 @@
 # Samsung (Tizen) spike: what we know so far
 
-Written 2026-11-04 by builder-4, without the TV. Each answer says how sure it is and where it comes from. What
-only the real TV can answer is in [tv-call-checklist.md](tv-call-checklist.md).
+Written 2026-11-04, without the TV. Each answer says how sure it is and where it comes from. What only the real
+TV can answer is listed at the end ([Open questions for the TV](#open-questions-for-the-tv)).
 
 ## The short version
 
-- **It can work, as an app the family opens.** It can't replace Samsung's Home (Smart Hub), and it can't start by
+- **It can work, as an app the household opens.** It can't replace Samsung's Home (Smart Hub), and it can't start by
   itself at power-on. Samsung's own "Autorun Last App" setting may bring it back at power-on if it was the last app
   used.
 - **Opening Netflix, YouTube and the rest: yes, very likely.** Not from the page itself, but from a small background
@@ -15,7 +15,7 @@ only the real TV can answer is in [tv-call-checklist.md](tv-call-checklist.md).
   Netflix" opening Netflix's home screen.
 - **Keys without ADB: a QR to a page on the phone, as on Android.** The module's service can run a small web server
   on the home network; TizenTube's does exactly that. To be checked once on the TV.
-- **The cost on the family's TV:** Developer Mode stays on for good (with "Host PC IP" set to the TV itself), and
+- **The cost on the TV:** Developer Mode stays on for good (with "Host PC IP" set to the TV itself), and
   TizenBrew is installed once from a PC. No root, nothing flashed, and all of it can be undone from the TV's menus.
 - **The biggest risks:** as a TizenBrew module it needs the internet to open at all (HomeTV as its own app, installed
   the same way as TizenBrew, fixes that: see [Working without the internet](#working-without-the-internet));
@@ -72,8 +72,8 @@ HBO Max, Apple TV or Hulu on Tizen. Three candidates, each one button on the tes
    today's YouTube opens a "connect your phone" pane instead of the video
    ([YTCAST.md](https://github.com/radubirsan/remotetvprogam/blob/main/YTCAST.md)).
 
-So for now **Watch on** opens the service's app, and whether to look further or accept that is Rebecca's decision
-(feedback.md, Tizen 19:32). If a candidate opens titles on the family's TV, it's a bonus for that service.
+So for now **Watch on** opens the service's app, and whether to look further or accept that is the project lead's
+decision. If a candidate opens titles on the test TV, it's a bonus for that service.
 
 ## 2. How do the household's keys get on without ADB?
 
@@ -86,7 +86,7 @@ So for now **Watch on** opens the service's app, and whether to look further or 
   keeps it in its own file on the TV. The page and the code rules can be shared with `design_preview/keys.html`.
 - **Keys don't go in the page's storage:** every TizenBrew app module shares the same web address
   (`127.0.0.1:8081`), so any other module the household adds could read it. The service's file is safer, though
-  services also share one process. So: no other modules on that TV unless Rebecca adds them.
+  services also share one process. So: no other modules on that TV unless the household adds them.
 - To check on the TV: that a phone on the same Wi-Fi reaches the port (the TV could block it).
 - Fallback if it can't: type the keys on the TV with the remote. TMDB's short API key (32 letters and digits, not the
   long token) and Watchmode's key make that slow but possible.
@@ -152,7 +152,7 @@ How sure: high (TizenBrew's guide and source), except where marked.
   plain ES5 with only Node's built-in modules, and checked with an ES5 parser.
 - **Memory:** Samsung doesn't publish a figure. Its memory guide asks web apps to keep images small and DOM short. The
   design's rule for 1 GB Android TVs (no blur, no autoplaying video, short animations) fits as it is.
-- **Unknown:** start time and scrolling on the family's TV. The checklist times both.
+- **Unknown:** start time and scrolling on the test TV. The first TV call times both.
 
 ## 6. How updates reach the TV
 
@@ -161,7 +161,7 @@ How sure: high (TizenBrew's guide and source), except where marked.
 - jsDelivr may keep serving the old version **up to 7 days**; one request to its purge page makes it immediate.
 - A TV can also pin a version (`npm/<name>@1.2.0`); then updating means changing it on the TV. Recommended: don't
   pin, purge after each publish, and roll back by publishing the previous version again.
-- Publishing needs an npm account and a package name: a question for Rebecca later (it's public: anything on npm is
+- Publishing needs an npm account and a package name: a question for the project lead later (it's public: anything on npm is
   readable by anyone, whatever the GitHub repo's visibility).
 
 ## Working without the internet
@@ -197,7 +197,7 @@ What helps, from least to most:
    ruled out (Tizen Studio and a certificate per TV) is handled by TizenBrew Installer here, as it is for TizenBrew.
    The three Samsung home screens in upstream's SHOWCASE (Skylight, Clean TV Home, Blocky Cabin) are all their own
    apps like this. The spike's `tizen/` folder is already that app, for the emulator.
-3. **Decided** (Rebecca, 18:35): after the first TV call, HomeTV becomes its own app with the cached page, the
+3. **Decided** (2026-11-04): after the first TV call, HomeTV becomes its own app with the cached page, the
    TizenBrew module as a fallback; a public release only once it works. Built on AeroTizen's base
    ([launcher-replacement.md](launcher-replacement.md)).
 
@@ -226,13 +226,13 @@ What helps, from least to most:
   app, to check the old engine and the real `tizen` calls (it has no Netflix, so opening apps there only shows the
   call is made).
 - **The test screen** for the TV call: one button per check, each result written on screen and on a page the phone
-  can open, so Rebecca reads it out or copies it instead of describing it.
+  can open, so the result is read out or copied instead of described.
 - **Shared logic** with `design_preview/`: a plan in [shared-package.md](shared-package.md).
 
 ## On Samsung's TV emulator (2026-11-04)
 
-Tizen 10 emulator, the spike as its own app (`tizen/`), signed with a Samsung certificate made with Rebecca's
-account:
+Tizen 10 emulator, the spike as its own app (`tizen/`), signed with a Samsung certificate made with the project
+lead's account:
 
 - **Works:** installs and opens; Home draws as designed on Samsung's web engine; the remote's keys reach the page
   (D-pad moves focus, OK presses); the page's own `tizen` calls work: it starts its background service, lists running
@@ -261,7 +261,7 @@ the key page's stays. Neither the web inspector nor the
 `operation/view` and `PAYLOAD` = `{"values":"v=<video id>"}` (its fireplace tile). That's the fourth title-link
 candidate, the most likely to work; the second call's checks use it.
 
-## Open questions for the TV (in the checklist)
+## Open questions for the TV
 
 1. The TV's model, year and Tizen version.
 2. Does an app open from the module's service? Which id per app?

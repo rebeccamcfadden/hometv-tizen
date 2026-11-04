@@ -1,6 +1,6 @@
 // TEMPORARY copy of hometv-launcher's design_preview/src/data/offers.ts at 2bf3c2d, until the offers move into
 // @hometv/core (docs/shared-package.md). Changes: the imports; the household's choices come from ./settings.ts, a
-// Samsung stand-in with one region (Rebecca, 2026-11-04 19:30), so pickServices() is that region's list only. The
+// Samsung stand-in with one region (decided 2026-11-04), so pickServices() is that region's list only. The
 // card functions (cardLine, cardOffer, availability) are what Movies and TV Shows' cards use too.
 import type { Offer, OfferType, Quality, ServiceId, Title } from '@hometv/core/types.ts';
 import { featureOn, settings, pickServices, pickStores } from './settings';

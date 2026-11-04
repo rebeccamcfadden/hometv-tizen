@@ -1,4 +1,4 @@
-// The Checks screen for the TV calls (docs/tv-call-checklist.md): one button per check, each result written on screen
+// The Checks screen for the TV calls (docs/research.md, Open questions for the TV): one button per check, each result written on screen
 // (and, under TizenBrew, on the page a phone opens). Pushed over Home; Back returns.
 
 import { bridge, type Result } from '../bridge';

@@ -1,4 +1,4 @@
-// F41 (Rebecca, 2026-11-02): the TV Utilities tile is shaped like a folder (a tab on its top edge) with a gear in the
+// F41 (2026-11-02): the TV Utilities tile is shaped like a folder (a tab on its top edge) with a gear in the
 // middle, drawn in code in the theme's colours. From design_preview's ui/folderArt.ts (the launcher's FolderArt).
 
 /** The tab's height and width, the corner radii and the curve where the tab meets the body, in px. */

@@ -4,7 +4,7 @@
 import type { Title } from '@hometv/core/types.ts';
 
 // F40: each title's poster on TMDB (its poster_path, looked up by name and year on 2026-11-02), for the portrait gallery
-// cards Rebecca is choosing between. TMDB serves it (image.tmdb.org, as the launcher's TMDB art).
+// cards still being chosen between. TMDB serves it (image.tmdb.org, as the launcher's TMDB art).
 const POSTERS: Record<string, string> = {
   '911': '/u6HuWWohheyzAj5PUn4rBd0eH92.jpg',
   'arrival': '/pEzNVQfdzYDzVK0XqxERIw2x2se.jpg',

@@ -1,4 +1,4 @@
-// The TV Utilities folder in All apps (design_preview's core/tvUtilities.ts, F35 b, Rebecca 2026-11-02: on for every TV,
+// The TV Utilities folder in All apps (design_preview's core/tvUtilities.ts, F35 b, decided 2026-11-02: on for every TV,
 // no switch): the apps the TV came with that aren't watch apps. Hold OK moves an app in or out by hand, and that
 // choice wins; it is kept in localStorage under `hometv-utility-moves`.
 //

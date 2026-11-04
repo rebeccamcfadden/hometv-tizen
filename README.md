@@ -8,14 +8,13 @@ Samsung app**: a web page (`app/`) with background services (`service/`), instal
 Developer Mode. A TizenBrew module is the fallback.
 
 **Built on [AeroTizen](https://github.com/helalaou/AeroTizen) by Hamza El Alaoui** (MIT), kept unmodified in
-`vendor/aerotizen/`: its install tool, certificate step and Home helper are what HomeTV uses on Samsung
-([docs/aerotizen-plan.md](docs/aerotizen-plan.md)). Its licence is in [LICENSE](LICENSE) and `vendor/aerotizen/LICENSE`.
-The shared logic comes from hometv-launcher's `packages/core` (MIT), a submodule.
+`vendor/aerotizen/`: its install tool, certificate step and Home helper are what HomeTV uses on Samsung. Its licence
+is in [LICENSE](LICENSE) and `vendor/aerotizen/LICENSE`. The shared logic comes from hometv-launcher's
+`packages/core` (MIT), a submodule.
 
-**Status:** built and checked on Samsung's TV emulator and a PC with a fake TV; never run on a real TV yet. The plan
-by version: [docs/versions.md](docs/versions.md). What we know so far: [docs/research.md](docs/research.md). The first
-call with a real TV: [docs/tv-call-checklist.md](docs/tv-call-checklist.md). How another TV's port shares the screens:
-[docs/platform.md](docs/platform.md). Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off),
+**Status:** built and checked on Samsung's TV emulator and a PC with a fake TV; never run on a real TV yet. What we know
+so far: [docs/research.md](docs/research.md). How another TV's port shares the screens: [docs/platform.md](docs/platform.md).
+Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off),
 [docs/launcher-replacement.md](docs/launcher-replacement.md) (how far a home screen can replace Samsung's),
 [docs/jailbreak.md](docs/jailbreak.md) (the options, safest first).
 

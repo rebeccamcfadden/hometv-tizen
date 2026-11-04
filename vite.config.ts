@@ -69,7 +69,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@hometv/core': path.resolve(__dirname, 'vendor/hometv-launcher/packages/core/src'),
-      // v1's screens only with HOMETV_V1=1 (app/src/features.ts, docs/versions.md).
+      // v1's screens only with HOMETV_V1=1 (app/src/features.ts).
       '@v1': path.resolve(__dirname, V1 ? 'app/src/v1.ts' : 'app/src/v1-off.ts'),
     },
   },

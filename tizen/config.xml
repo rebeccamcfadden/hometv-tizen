@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- HomeTV as its own Samsung app (Rebecca, 2026-11-04 18:35), on AeroTizen's base: HomeTV's page (dist/) with
+<!-- HomeTV as its own Samsung app (decided 2026-11-04), on AeroTizen's base: HomeTV's page (dist/) with
      AeroTizen's ES5 platform scripts (dist/aero/), and AeroTizen's Home watcher as the background service
      (aero/service/, copied unmodified by tools/package-tizen.mjs except its app id and port). A second service,
      HomeTVPages (service/pages.js and keys-page.html, copied to pages/), serves the API keys page a phone opens from
