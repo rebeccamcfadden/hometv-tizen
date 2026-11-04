@@ -3,7 +3,7 @@
 // comes in as `facts`, so tests run it in Node and the screen passes the household's store and the offers.
 
 import type { Kind, Title } from '@hometv/core/types.ts';
-import { GENRES } from '../data/catalog';
+import { GENRES } from '../data/catalog.ts';
 
 export interface TitleFacts {
   isSeen(id: string): boolean;
