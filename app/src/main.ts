@@ -1,15 +1,25 @@
 import './styles.css';
+import './ui/motion.css';
+import { watchErrors } from './errors';
 import { bridge } from './bridge';
 import { shell } from './shell/app';
 import { homeScreen } from './screens/home';
 import { showChecks } from './screens/checks';
 import { v1Tabs } from '@v1';
+import { prefs } from './prefs';
+import { initScreensaver } from './ui/screensaver';
 
 // HomeTV for Samsung: the shell (screen stack, focus, keys) and its screens. Home first; Movies, TV Shows and Search are
 // its tabs, ported from design_preview.
 
 const t0 = Date.now();
+// HomeTV's own errors go to the log on the TV that "Report a problem" shows (nothing is sent).
+watchErrors();
 const stage = document.getElementById('stage') as HTMLElement;
+// Motion (prefs.ts, the nav's Settings menu): Reduced drops the scale-ups, Off every animation (ui/motion.css).
+const applyMotion = () => stage.setAttribute('data-motion', prefs.get().motion);
+applyMotion();
+prefs.on(applyMotion);
 
 const home = homeScreen();
 
@@ -31,6 +41,8 @@ async function start() {
     home: () => home,
     ...v1Tabs,
   });
+  // F36: the clock screensaver watches Home for idle time and wakes on any key (prefs.ts: off until a time is picked).
+  initScreensaver();
   const homeShownMs = Date.now() - t0;
   bridge.platform.started();
   if (bridge.mode() === 'app') shell.toast(`Home in ${homeShownMs} ms · ${(/Chrome\/(\d+)/.exec(navigator.userAgent) || ['', '?'])[1]}`);

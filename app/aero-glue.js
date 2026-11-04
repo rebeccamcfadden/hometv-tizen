@@ -37,8 +37,33 @@
     "handoff.launchFailed": "it failed to start",
     "handoff.wouldOpenHome": "On the TV this opens Samsung’s home.",
     "handoff.homeTryAgain": "Try again.",
+    // Live TV from the nav's Inputs menu (native-navigation.js's openNativeLiveTV).
+    "handoff.liveTvFailed": "Live TV didn’t open: {reason}",
+    "handoff.liveTvNoFocus": "Live TV may not have opened. Try again, or press the remote’s TV button.",
+    "handoff.watcherHttp": "HomeTV’s helper answered {status}",
+    "handoff.watcherUnavailable": "HomeTV’s helper isn’t running",
+    "handoff.watcherRequestFailed": "HomeTV’s helper couldn’t be asked",
+    "handoff.appControlFailed": "the TV refused",
+    "handoff.appControlUnavailable": "this TV can’t open it from an app",
+    "handoff.tunerFailed": "the TV’s tuner didn’t switch: {reason}",
+    "handoff.sourceError": "source error",
+    "handoff.tunerUnavailable": "this TV can’t switch its tuner from an app",
+  };
+  // Failures AeroTizen reports in words go to HomeTV's error log too (app/src/errors.ts, which keeps only what its
+  // allowlist allows: never the app's name, only whether it is one of Home's apps).
+  var FAILED = {
+    "apps.openFailed": "app",
+    "apps.openFailedDetail": "app",
+    "handoff.liveTvFailed": "live-tv",
   };
   A.translate = function (key, values) {
+    if (FAILED[key] && window.hometvFailed) {
+      try {
+        window.hometvFailed(FAILED[key], { name: (values && values.name) || "", reason: (values && values.reason) || "" });
+      } catch (e) {
+        /* the log must never stop the message */
+      }
+    }
     var text = WORDS[key] || key;
     for (var k in values || {}) {
       text = text.split("{" + k + "}").join(values[k]);
