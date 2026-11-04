@@ -57,6 +57,13 @@ or **Preview** (no service: `npm run dev -- --no-service`).
 The fake TV has Netflix and Prime Video only under their pre-2020 ids and no Hulu, so the service's fallback and
 "not on this TV" show; a few Samsung apps (made-up ids) fill All apps and its TV Utilities folder. `/report` on port 8766, opened from a phone on the same Wi-Fi, lists every check's result.
 
+**First run** shows on the first start (until it's done or skipped; clear the page's `hometv-setup-done` in
+localStorage to see it again): the region (Sweden or the United States, one at a time) and the weather city.
+**Settings** (Home's lower row) has Home row apps, Weather, Region, First run and About. The weather under Home's clock
+comes from Open-Meteo (no key, so it needs the internet): the place search asks `geocoding-api.open-meteo.com` with
+what was typed, the forecast asks `api.open-meteo.com` with the chosen place's position, at most every 30 minutes.
+Offline, Home shows the last forecast with its age, or no weather.
+
 **API keys** (Home's lower row) shows the QR for the key page. In `npm run dev` its service is on 8767 and checks keys fake services: a key with `good` in it works, one with `offline` can't be reached, any other is refused.
 
 ## Emulator

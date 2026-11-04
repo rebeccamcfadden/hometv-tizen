@@ -35,11 +35,14 @@ port to another TV (LG's webOS: hometv-webos) copies the screens and the shell u
 | Member | What | Samsung |
 |---|---|---|
 | `brand`, `os` | Names shown to people: "Samsung app", "Tizen 6.5" | `'Samsung'`, `'Tizen'` |
+| `credits` | Who the platform side is built on, for Settings › About | AeroTizen, by its author (MIT) |
 | `keys` | keyCode → `'left' \| 'right' \| 'up' \| 'down' \| 'ok' \| 'back'` (main.ts gives it to the shell) | arrows, Enter, Return 10009, Esc, Backspace |
 | `buttons` | keyCodes for `red`, `green`, `yellow`, `blue`, `info` | 403-406, 457 |
 | `registerButtons(names)` | asks the TV to send these buttons (`'digits'` for 0-9) | `tizen.tvinputdevice.registerKey` |
 | `online()` | false only when the TV says it's offline | `navigator.onLine` |
 | `started()` | tells the loader the page works (updates may then run) | `HomeTVBoot.started()` (`app/loader/boot.js`) |
+| `clock()` | the TV's wall clock (date, time, weekday) and whether it shows 24 hours (`null`: can't say), for Home's top bar | `tizen.time.getCurrentDateTime()` and `getTimeFormat()`, since the page's `Date` may not follow the TV's time zone; else `Date` |
+| `pageUpdates()` | the app's and page's versions, whether updates are on, a newer page ready for the next start, the last check; `null` without the loader | `HomeTVBoot.status()` (`app/loader/boot.js`) |
 | `keyPages.onTv()` | a real TV (only the TV's port is tried) | `tizen` is there |
 | `keyPages.start()` | starts the key page's background service | an app control to `HmTvSpike0.HomeTVPages` |
 | `keyPages.token()` | the screen's token for the service's TV-only routes | read from the app's private folder (`tizen.filesystem`) |
