@@ -59,8 +59,11 @@ function capability(key: string): string | null {
   }
 }
 
-/** Sends an app control and says whether the TV accepted it (not whether the title opened: that's for the eyes). */
-function appControl(appId: string, uri: string | null, payload: string): Promise<string> {
+/**
+ * Sends an app control and says whether the TV accepted it (not whether the title opened: that's for the eyes).
+ * Returns '' when accepted, else the error. The title page's Watch buttons use it too (bridge.openTitle).
+ */
+export function appControl(appId: string, uri: string | null, payload: string): Promise<string> {
   const t = tz()!;
   return new Promise((resolve) => {
     try {

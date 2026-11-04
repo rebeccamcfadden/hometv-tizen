@@ -7,7 +7,8 @@
 // - **preview**: neither; the page still works and says so.
 
 import { HOME_APPS } from './apps';
-import { pageChecks } from './pageChecks';
+import { appControl, pageChecks } from './pageChecks';
+import type { OpenPlan } from './titleLinks';
 
 export const SERVICE = 'http://127.0.0.1:8766';
 
@@ -77,12 +78,15 @@ let ping: Ping | null = null;
 let problem = '';
 const previewLog: Result[] = [];
 
-/** The installed app for a Home tile, by name (AeroTizen's catalogue keys differ from ours). */
-function installedFor(key: string): AeroApp | null {
+/**
+ * The installed app for a Home tile, by name (AeroTizen's catalogue keys differ from ours). An app that isn't on Home's
+ * row (a store's, or Viaplay's from the title page) is found by `name`.
+ */
+function installedFor(key: string, name?: string): AeroApp | null {
   const aero = w.AeroTizen;
   const tile = HOME_APPS.filter((a) => a.key === key)[0];
-  if (!aero || !tile) return null;
-  const want = tile.name.toLowerCase();
+  if (!aero || (!tile && !name)) return null;
+  const want = (tile ? tile.name : name!).toLowerCase();
   return (
     aero.apps.all.filter((a) => {
       const n = a.name.toLowerCase();
@@ -157,10 +161,13 @@ export const bridge = {
     return app && w.AeroTizen ? w.AeroTizen.tiles.describe(app).artwork : [];
   },
 
-  /** Opens an app. As its own app, AeroTizen's launcher opens it and reports failures through the toast. */
-  async launch(key: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
+  /**
+   * Opens an app. As its own app, AeroTizen's launcher opens it and reports failures through the toast. `name` finds
+   * an app that isn't on Home's row in the TV's list (own-app mode); under TizenBrew the service knows apps by key.
+   */
+  async launch(key: string, name?: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
     if (mode === 'app') {
-      const app = installedFor(key);
+      const app = installedFor(key, name);
       if (!app) return { ok: false, id: null, error: 'not on this TV' };
       w.AeroTizen!.apps.launch(app);
       return { ok: true, id: app.id };
@@ -173,6 +180,22 @@ export const bridge = {
     } catch (e) {
       return { ok: false, id: null, error: (e as Error).message };
     }
+  },
+
+  /**
+   * Opens a title (titleLinks.ts, openPlan): as its own app, a title link goes as an app control, as the TV-call
+   * checks send it (pageChecks.ts); if the TV refuses it, or under TizenBrew (the service has no title links yet), the
+   * app opens on its home. `linked` says whether the link went.
+   */
+  async openTitle(plan: OpenPlan): Promise<{ ok: boolean; id: string | null; linked: boolean; error?: string }> {
+    if (plan.how === 'link' && mode === 'app') {
+      const app = installedFor(plan.app.key, plan.app.name);
+      if (!app) return { ok: false, id: null, linked: false, error: 'not on this TV' };
+      const error = await appControl(app.id, plan.url, plan.payload);
+      if (!error) return { ok: true, id: app.id, linked: true };
+    }
+    const r = await bridge.launch(plan.app.key, plan.app.name);
+    return { ok: r.ok, id: r.id, linked: false, error: r.error };
   },
 
   async check(name: string, params: Record<string, unknown> = {}): Promise<Result> {

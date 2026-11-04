@@ -4,6 +4,7 @@ import { shell, type Screen } from './shell/app';
 import { h } from './shell/dom';
 import { homeScreen } from './screens/home';
 import { showChecks } from './screens/checks';
+import { searchScreen } from './screens/search';
 
 // HomeTV for Samsung: the shell (screen stack, focus, keys) and its screens. Home first; the other tabs are filled
 // as screens are ported from design_preview.
@@ -29,7 +30,7 @@ async function start() {
     home: () => home,
     movies: () => placeholder('Movies'),
     tv: () => placeholder('TV Shows'),
-    search: () => placeholder('Search'),
+    search: searchScreen,
   });
   const homeShownMs = Date.now() - t0;
   // Tells the installed app's loader (app/loader/boot.js) this page works; its updater may then look for a newer one.

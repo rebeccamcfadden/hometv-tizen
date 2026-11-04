@@ -45,6 +45,22 @@ body {
   display: flex;
   align-items: center;
 }
+/* Search, at the start of the top bar's right side (screens/home.ts). */
+.searchbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-right: 24px;
+  border-radius: 32px;
+  background: #1c2740;
+}
+.searchbtn.is-focused {
+  background: #b9d4ff;
+  color: #0b0f1a;
+  transform: scale(1.08);
+}
 .clock {
   font-size: 32px;
   margin-left: 24px;
