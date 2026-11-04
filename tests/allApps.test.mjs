@@ -104,3 +104,16 @@ test('a hand move wins, and only a move against the rule is kept', () => {
   s.setItem(UTILITY_MOVES_KEY, 'nope');
   assert.deepEqual(loadMoves(s), {});
 });
+
+test('an installed app is a Home tile only by that tile’s name: YouTube Kids is not YouTube', async () => {
+  const { loadTs } = await import('./ts-module.mjs');
+  const { keyForName } = await loadTs('apps.ts');
+  assert.equal(keyForName('YouTube'), 'youtube');
+  assert.equal(keyForName('YouTube Kids'), null);
+  assert.equal(keyForName('Spotify - Music and Podcasts'), 'spotify');
+  assert.equal(keyForName('Max'), 'max');
+  assert.equal(keyForName('HBO Max'), 'max');
+  assert.equal(keyForName('Apple TV'), 'appletv');
+  assert.equal(keyForName('Prime Video'), 'prime');
+  assert.equal(keyForName('Twitch'), null);
+});

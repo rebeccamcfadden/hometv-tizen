@@ -6,7 +6,7 @@
 //   (service/service.js) on 127.0.0.1:8766: on the TV, or on a PC with the fake TV (`npm run dev`).
 // - **preview**: neither; the page still works and says so.
 
-import { HOME_APPS } from './apps';
+import { HOME_APPS, keyForName } from './apps';
 import { appControl, pageChecks } from './pageChecks';
 import type { OpenPlan } from './titleLinks';
 
@@ -102,17 +102,18 @@ function installedFor(key: string, name?: string): AeroApp | null {
     return aero.apps.all.filter((a) => a.id === id)[0] || null;
   }
   const tile = HOME_APPS.filter((a) => a.key === key)[0];
-  if (tile) return aero.apps.all.filter((a) => keyForName(a.name) === key)[0] || null;
+  if (tile) {
+    // The app that is this tile by name; else, as before, the first whose name starts with the tile's.
+    const want = tile.name.toLowerCase();
+    return (
+      aero.apps.all.filter((a) => keyForName(a.name) === key)[0] ||
+      aero.apps.all.filter((a) => a.name.toLowerCase().indexOf(want) === 0)[0] ||
+      null
+    );
+  }
   if (!name) return null;
   const want = name.toLowerCase();
   return aero.apps.all.filter((a) => a.name.toLowerCase().indexOf(want) === 0)[0] || null;
-}
-
-/** The Home tile an installed app is, by its name on the TV ("Max" is HBO Max), or null. */
-function keyForName(name: string): string | null {
-  const n = name.toLowerCase();
-  for (const t of HOME_APPS) if (n.indexOf(t.name.toLowerCase()) === 0 || (t.key === 'max' && n === 'max')) return t.key;
-  return null;
 }
 
 export const bridge = {

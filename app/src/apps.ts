@@ -47,3 +47,13 @@ function storage(): Storage | null {
     return null;
   }
 }
+
+/**
+ * The Home tile an installed app is, by its name on the TV, or null: the tile's name, maybe followed by " - " and more
+ * ("Spotify - Music and Podcasts"); "Max" is HBO Max. "YouTube Kids" is not YouTube.
+ */
+export function keyForName(name: string): string | null {
+  const n = name.toLowerCase().replace(/\s+-\s.*$/, '').trim();
+  for (const t of HOME_APPS) if (n === t.name.toLowerCase() || (t.key === 'max' && n === 'max')) return t.key;
+  return null;
+}

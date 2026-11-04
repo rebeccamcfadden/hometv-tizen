@@ -49,6 +49,8 @@
   -webkit-align-items: center;
   align-items: center;
   /* One row however many lists there are; it scrolls with focus. Room for the focus ring. */
+  -webkit-flex-wrap: nowrap;
+  flex-wrap: nowrap;
   white-space: nowrap;
   overflow: hidden;
   padding: 8px;
