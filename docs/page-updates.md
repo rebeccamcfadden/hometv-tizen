@@ -24,8 +24,8 @@ At every start, `boot.js` (plain ES5, no network) picks the newest good page the
 3. the one before it, else
 4. the page that came with the app.
 
-It only uses a downloaded page that is newer than the app's own, needs no newer app than this one, and hasn't
-failed. It reads that page's files from the app's private storage (`wgt-private/pages/<version>/`, through Tizen's
+It only uses a downloaded page that is newer than the app's own, was signed with a key this app trusts, needs no
+newer app than this one, and hasn't failed. It reads that page's files from the app's private storage (`wgt-private/pages/<version>/`, through Tizen's
 filesystem API: `openFile` on Tizen 5.0 and newer, the older `resolve` on Tizen 3 and 4) and puts them into the
 installed `index.html` as inline styles and scripts. Images load from the same folder (a `<base>` address). The app
 never goes to another web page, so it keeps `tizen`.
@@ -49,12 +49,16 @@ The TV keeps **at most two** downloaded pages: the one in use and one more (the 
 
 ### When a new page fails
 
-A new page has 30 seconds to reach Home. If it doesn't (it hangs, throws, or the TV goes off first):
+A new page has 30 seconds to reach Home. If it doesn't (it hangs, throws, or the TV goes off first), that start
+counts as failed; after 30 seconds the app reloads. One failed start isn't enough to drop a page: people switch a TV
+off in the first seconds. So:
 
-- after 30 seconds the app reloads; at the next start it uses the previous good page (or the app's own);
-- that version is **skipped** from then on: it's never shown or downloaded again. Fix it as a new version.
+- after the **first** failed start, the next start tries the same page again;
+- after **two failed starts in a row**, the next start uses the previous good page (or the app's own), and that
+  version is **skipped** from then on: it's never shown or downloaded again. Fix it as a new version.
 
-A page that once worked gets a second chance: it is skipped after two failed starts in a row.
+A start that reaches Home clears the count. The same goes for a page that once worked. A page that hangs costs two
+waits of 30 seconds before the TV goes back.
 
 If a downloaded page's files are missing or damaged on the TV, the app uses the next best page at once, in the same
 start. If the TV refuses inline scripts, downloaded pages are switched off for that app version and it keeps its own.
@@ -96,13 +100,22 @@ before, so raise `package.json`'s version too.
 
 ## Undoing a page
 
-- **It doesn't start:** nothing to do. The TV goes back by itself and skips that version.
+- **It doesn't start:** nothing to do. After two failed starts the TV goes back by itself and skips that version.
 - **It starts but is wrong:** release the previous code again **with a higher version number** (check out the
   older code, raise the version past the bad one, build, release). TVs never go back to a lower number.
 - **Everything off:** take `manifest.json` off the server. TVs keep the page they have and stop changing.
-- **Back to the app's own page on one TV:** reinstall the app with a page version higher than the downloaded one.
+- **Back to the app's own page on one TV:** reinstall the app with its own page's version (`package.json`) at least
+  as high as the downloaded one. This works whether or not reinstalling deletes the downloaded pages: a TV never shows
+  a downloaded page that isn't newer than the app's own. If the server still offers a newer page, the TV downloads it
+  again, so take that one off the server first (or release the fix above).
 - **A lost or leaked key:** make a new pair, put the new public key in `tizen/page-keys.txt` (remove the old one),
-  and reinstall the app with the laptop. TVs only trust the keys their app was built with.
+  and reinstall the app with the laptop. TVs only trust the keys their app was built with, and each downloaded page
+  remembers the key that signed it, so pages signed with the old key are no longer shown even if the reinstall keeps
+  them; they're deleted once Home shows. Then release the page again with the new key (the same version is fine).
+
+Whether reinstalling or uninstalling the app keeps its private storage (the downloaded pages and their records)
+isn't checked yet. The steps above don't depend on it. An uninstall and a fresh install start with the app's own
+page in any case if the storage goes; if it stays, the rules above still pick which page shows.
 
 ## Trying it on a PC
 
