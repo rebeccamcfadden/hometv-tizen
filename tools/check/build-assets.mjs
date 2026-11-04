@@ -20,7 +20,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { checkAppWgt, root, WGT_NAME } from './package-check.mjs';
+import { checkAppWgt, lf, root, WGT_NAME } from './package-check.mjs';
 import { readZip, writeZip } from './zip.mjs';
 
 export const TAG = 'check-samsung-v1';
@@ -146,14 +146,14 @@ export async function bundleFiles({ wgt, offline = false }) {
     for (const f of readZip(data)) add('lib/' + f.name, f.data);
   }
   const aero = path.join(root, 'vendor', 'aerotizen', 'cli', 'src', 'aerotizen');
-  for (const rel of walk(aero)) add('lib/aerotizen/' + rel, fs.readFileSync(path.join(aero, rel)));
-  for (const f of ['hometv_check.py', 'check_report.py']) add('app/' + f, fs.readFileSync(path.join(root, 'tools', 'check', f)));
-  add('app/report-schema.json', fs.readFileSync(path.join(root, 'app', 'src', 'check', 'report-schema.json')));
+  for (const rel of walk(aero)) add('lib/aerotizen/' + rel, lf(rel, fs.readFileSync(path.join(aero, rel))));
+  for (const f of ['hometv_check.py', 'check_report.py']) add('app/' + f, lf(f, fs.readFileSync(path.join(root, 'tools', 'check', f))));
+  add('app/report-schema.json', lf('.json', fs.readFileSync(path.join(root, 'app', 'src', 'check', 'report-schema.json'))));
   add(WGT_NAME, wgt);
   add('Start HomeTV Check.cmd', START_CMD.replace(/\n/g, '\r\n'));
   add('README.txt', README.replace('{PY}', lock.python.version).replace(/\n/g, '\r\n'));
-  add('LICENSES/HomeTV.txt', fs.readFileSync(path.join(root, 'LICENSE')));
-  add('LICENSES/AeroTizen.txt', fs.readFileSync(path.join(root, 'vendor', 'aerotizen', 'LICENSE')));
+  add('LICENSES/HomeTV.txt', lf('LICENSE', fs.readFileSync(path.join(root, 'LICENSE'))));
+  add('LICENSES/AeroTizen.txt', lf('LICENSE', fs.readFileSync(path.join(root, 'vendor', 'aerotizen', 'LICENSE'))));
   return files;
 }
 

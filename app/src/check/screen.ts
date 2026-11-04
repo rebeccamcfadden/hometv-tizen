@@ -43,7 +43,7 @@ function store() {
   bridge.publishReport(cleanTvReport(progress.draft));
 }
 
-/** The report as it leaves the TV (the laptop reads this through the web inspector: route 1). */
+/** The report as it leaves the TV (the laptop reads this through the web inspector: docs/check-tool.md, way 2). */
 export function report(): Record<string, unknown> {
   return progress ? cleanTvReport(progress.draft) : {};
 }

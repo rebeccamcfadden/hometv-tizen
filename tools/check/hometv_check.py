@@ -560,7 +560,7 @@ class Check:
             self.laptop["pagesFromLaptop"] = "answers" if 200 <= g < 300 else "silent"
 
     def read_watcher(self):
-        """Route 2: the report the check page left with AeroTizen's watcher (its start-up trace slot)."""
+        """Way 1 (docs/check-tool.md): the report the check page left with AeroTizen's watcher (its start-up trace slot)."""
         if self.dry:
             return dry_tv_report()
         try:
@@ -725,7 +725,7 @@ STEP_NAMES = {
 
 
 def read_through_inspector(tv, local_port):
-    """Route 1: restart the check app with its web inspector (AeroTizen's `inspect`) and ask the page for its
+    """Way 2 (docs/check-tool.md): restart the check app with its web inspector (AeroTizen's `inspect`) and ask the page for its
     report (Chrome DevTools: Runtime.evaluate of HomeTVCheck.report()). The results survive the restart: the page
     keeps them in its own storage."""
     from aerotizen import inspect_app

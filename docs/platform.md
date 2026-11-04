@@ -27,6 +27,8 @@ port to another TV (LG's webOS: hometv-webos) copies the screens and the shell u
 | `launch(key, name?)` | `{ ok, id, error? }` | AeroTizen's launcher, or the service's `/launch` |
 | `openTitle(plan)` | `{ ok, id, linked, error? }` | an app control with the title's link, else the app's home |
 | `check(name, params)`, `results()` | the TV-call checks and their saved results | `pageChecks.ts` in the own app; the service under TizenBrew |
+| `serviceAnswers(which)` | the check app: whether `'watcher'` (47791) or `'pages'` (8766) answers on the TV's 127.0.0.1 | `pageChecks.service` (own app only) |
+| `publishReport(report)` | the check app: leaves its allowlisted report where the laptop reads it ([check-tool.md](check-tool.md)) | AeroTizen's watcher, its start-up trace slot |
 | `setToast(fn)` | | AeroTizen's own messages go to HomeTV's toast |
 | `addresses()` | the TV's addresses the service reported | |
 

@@ -15,7 +15,7 @@ const stage = document.getElementById('stage') as HTMLElement;
 shell.keys = bridge.platform.keys;
 bridge.platform.registerButtons(['red', 'green', 'yellow', 'blue', 'info', 'digits']);
 
-/** What the laptop reads through the web inspector (route 1): the allowlisted report, as JSON text. */
+/** What the laptop reads through the web inspector (docs/check-tool.md, way 2): the allowlisted report, as JSON text. */
 (window as unknown as { HomeTVCheck: unknown }).HomeTVCheck = {
   version: CHECK_VERSION,
   report: () => JSON.stringify(report()),

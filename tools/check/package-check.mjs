@@ -29,6 +29,11 @@ const retarget = (text) => text.split('DclHome001.Home').join(CHECK_APP_ID).spli
 /** The sample catalogue's titles (app/src/data/catalog.ts), never in a TV package. */
 const sampleIn = (js) => /Knives Out|Past Lives|Severance/.test(js);
 
+/** Text files with LF line ends, whatever git's checkout did, so every clone builds the same bytes. */
+export function lf(name, data) {
+  return /(\.(js|mjs|html|css|json|xml|py|txt|md|cmd)|LICENSE)$/i.test(name) ? Buffer.from(data.toString('utf8').replace(/\r\n/g, '\n')) : data;
+}
+
 function walk(dir, base = dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => {
     const p = path.join(dir, d.name);
@@ -61,7 +66,7 @@ export function checkAppFiles(dist = path.join(root, 'dist')) {
   for (const f of files) {
     if (/\.(js|html|xml)$/.test(f.name) && f.data.toString('utf8').indexOf(HOMETV_PACKAGE) >= 0) throw new Error(`${f.name} still has HomeTV's id`);
   }
-  return files;
+  return files.map((f) => ({ name: f.name, data: lf(f.name, f.data) }));
 }
 
 /** The unsigned .wgt (a ZIP), deterministic: the same files give the same bytes. */

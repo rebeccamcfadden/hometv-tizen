@@ -32,6 +32,7 @@ Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off),
 | `vendor/hometv-launcher/` | Submodule: hometv-launcher, for `packages/core` (`@hometv/core`). |
 | `vendor/tweetnacl/` | TweetNaCl.js 1.0.3 (public domain), for checking page updates' signatures. |
 | `tests/` | `npm test`: the service against the fake TV, the old-engine check, page updates on a fake TV page (`fake-browser.mjs`), the platform boundary, and the page's own rules bundled from TypeScript (`ts-module.mjs`). |
+| `tools/check/`, `app/src/check/`, `site/check/` | The check a person runs once from a Windows laptop before HomeTV goes on their Samsung: the laptop tool, the check app (`HOMETV_CHECK=1 npm run build`), the release-asset builder and the instructions page (GitHub Pages). [docs/check-tool.md](docs/check-tool.md). |
 
 ## Try it on a PC
 
