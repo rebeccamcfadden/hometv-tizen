@@ -1,6 +1,6 @@
 # Replacing Samsung's home screen: what's possible
 
-Research for Rebecca, 2026-11-04, without the TV. Nothing here has been run on any TV. Sources at the end; how sure
+Research, 2026-11-04, without the TV. Nothing here has been run on any TV. Sources at the end; how sure
 each point is, is said where it matters.
 
 ## The short version
@@ -11,7 +11,7 @@ each point is, is said where it matters.
 - **Two open-source home screens already do the most that's possible without root:** **AeroTizen** (MIT licence,
   20 models tested, a Windows tool that does the certificate and install) and **Skylight**. HomeTV can do the same
   things, and can borrow how they do them.
-- **For the family TV: the "comes back after Home" kind, plus Samsung's own settings.** It's all undoable, needs
+- **For the test TV: the "comes back after Home" kind, plus Samsung's own settings.** It's all undoable, needs
   nothing beyond Developer Mode and one install from the laptop, and is what both projects use by default.
 - **Samsung's own home bar can't be changed** by any app: its ad rows stay, but its settings can turn some of them
   off ([privacy.md](privacy.md)) and a home screen can cover it.
@@ -66,9 +66,9 @@ reuses AeroTizen's watcher.
    off by default as the fork requires, switched on in HomeTV's settings.
 3. **Samsung's start settings** set by the household from a short guide: Start with Smart Hub Home off, Autorun
    Samsung TV Plus off, Autorun Last App on (so a wake from standby returns to HomeTV).
-4. **Native Home: not on the family TV for now.** It's experimental, unproven on most models, and changes a system
-   setting. Revisit if AeroTizen's table grows to the family's model.
-5. **Build on AeroTizen** (Rebecca, 18:38: yes, our screens on its base, its MIT licence kept and credited):
+4. **Native Home: not on the test TV for now.** It's experimental, unproven on most models, and changes a system
+   setting. Revisit if AeroTizen's table grows to that TV's model.
+5. **Build on AeroTizen** (decided 2026-11-04: yes, our screens on its base, its MIT licence kept and credited):
    MIT-licensed, maintained (commits today), with the install, certificate and update tool HomeTV would otherwise
    write. HomeTV's own part is the screen (catalogue, prices, Pick for me) from `design_preview/`.
 
@@ -83,7 +83,7 @@ reuses AeroTizen's watcher.
 
 ## Undo
 
-- Settings: back to the values written down first (the checklist's Part A3).
+- Settings: back to the values written down first.
 - The app: Apps › Settings › HomeTV › Delete (or the install tool's uninstall).
 - Native Home, if ever used: the tool's restore command first, then a 60-second power-off, then delete.
 - Developer Mode off: Apps › `12345` › Off, full restart.

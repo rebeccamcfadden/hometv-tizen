@@ -1,10 +1,13 @@
-// The clock screensaver's rules (app/src/ui/saverModel.ts) and its saved choices (app/src/prefs.ts): it starts only on
+// The clock screensaver's rules (app/src/ui/saverModel.ts) and its saved choices (Settings › Performance and Screensaver,
+// in app/src/launcherSettings.ts): it starts only on
 // Home, only in front, only after the chosen idle time; any key wakes it and is swallowed with its release. `npm test`.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { afterMs, clockText, createIdle, glowBackground, mix, PALETTE } from '../app/src/ui/saverModel.ts';
-import { DEFAULT_PREFS, loadPrefs, PREFS_KEY, savePrefs } from '../app/src/prefs.ts';
+import { loadTs } from './ts-module.mjs';
+
+const ls = await loadTs('launcherSettings.ts');
 
 const clock = (t = 0) => {
   const c = { t, now: () => c.t };
@@ -79,7 +82,7 @@ test('the idle time: design_preview’s choices, off by default, and ?saver=fast
   assert.equal(afterMs('30'), 30 * MIN);
   assert.equal(afterMs('5', true), 10000);
   assert.equal(afterMs('nonsense'), 0);
-  assert.equal(DEFAULT_PREFS.screensaverAfter, 'off');
+  assert.equal(ls.defaults().screensaverAfter, 'off');
 });
 
 test('the clock’s words, written out', () => {
@@ -97,15 +100,18 @@ test('the glow: colours mix in steps, and the gradient has no color-mix() (Chrom
   assert.doesNotMatch(g, /color-mix/);
 });
 
-test('prefs: saved choices come back, odd ones fall back to the defaults', () => {
+test('Motion and the screensaver are in the one settings store: saved, read back, odd values fall back', () => {
   const m = new Map();
   const s = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)) };
-  assert.deepEqual(loadPrefs(s), DEFAULT_PREFS);
-  savePrefs(s, { motion: 'off', screensaverAfter: '15', screensaverBack: 'black' });
-  assert.deepEqual(loadPrefs(s), { motion: 'off', screensaverAfter: '15', screensaverBack: 'black' });
-  m.set(PREFS_KEY, JSON.stringify({ motion: 'wild', screensaverAfter: 7, screensaverBack: 'picture' }));
-  assert.deepEqual(loadPrefs(s), DEFAULT_PREFS);
-  m.set(PREFS_KEY, '{broken');
-  assert.deepEqual(loadPrefs(s), DEFAULT_PREFS);
-  assert.deepEqual(loadPrefs(null), DEFAULT_PREFS);
+  const look = (p) => ({ motion: p.motion, screensaverAfter: p.screensaverAfter, screensaverBack: p.screensaverBack });
+  assert.deepEqual(look(ls.loadPrefs(s)), { motion: 'full', screensaverAfter: 'off', screensaverBack: 'glow' });
+  const store = ls.createPrefs(s);
+  store.set({ region: 'us' });
+  store.set({ motion: 'off', screensaverAfter: '15', screensaverBack: 'black' });
+  assert.equal(store.get().region, 'us', 'other settings stay');
+  assert.deepEqual(look(ls.loadPrefs(s)), { motion: 'off', screensaverAfter: '15', screensaverBack: 'black' });
+  assert.deepEqual(Array.from(m.keys()), [ls.SETTINGS_KEY], 'one key');
+  m.set(ls.SETTINGS_KEY, JSON.stringify({ motion: 'wild', screensaverAfter: 7, screensaverBack: 'picture' }));
+  assert.deepEqual(look(ls.loadPrefs(s)), { motion: 'full', screensaverAfter: 'off', screensaverBack: 'glow' });
+  assert.deepEqual(look(ls.loadPrefs(null)), { motion: 'full', screensaverAfter: 'off', screensaverBack: 'glow' });
 });

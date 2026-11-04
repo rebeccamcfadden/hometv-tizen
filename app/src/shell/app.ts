@@ -1,6 +1,6 @@
 // The screen stack, layers, Back, focus and keys, from design_preview's core/app.ts, for a TV remote and
 // Chromium 56. The TV's key codes come from the platform (bridge.platform.keys); nothing here is Samsung's. Screens are modules that build an element and say how they handle keys; the shell does the rest.
-// Left out from design_preview: the phone remote (on the back burner on Samsung, Rebecca 19:36) and the import pill.
+// Left out from design_preview: the phone remote (on the back burner on Samsung) and the import pill.
 
 import { h } from './dom';
 import { type Dir, ensureVisible, findNext, handlerOf, nearest } from './focus';

@@ -1,4 +1,4 @@
-// "Report a problem" (from the Checks screen, and from Settings once it is merged): the last problems HomeTV noted on
+// "Report a problem" (from Settings › About and the Checks screen): the last problems HomeTV noted on
 // this TV (errors.ts, report.ts) as a short report a person can read out, photograph, or scan with a phone. The QR
 // holds the report's text itself, so the phone shows it with no page or network behind it. Nothing is sent anywhere.
 

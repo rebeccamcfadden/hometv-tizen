@@ -1,5 +1,5 @@
 // F36: the clock screensaver, ported from hometv-launcher's design_preview/src/ui/screensaver.ts at 2bf3c2d (back from
-// the old launcher, upstream's ClockScene). The time and date float over a slow coloured glow, or black (prefs.ts).
+// the old launcher, upstream's ClockScene). The time and date float over a slow coloured glow, or black (launcherSettings.ts).
 // Every minute the clock fades out, moves to a new spot and fades in, and the glow follows it and shifts colour, so
 // nothing burns in. It starts only on Home, after Home has sat untouched for the chosen time, never over a menu,
 // another page, an input or another app. Any key wakes it and is swallowed, so the key that wakes it doesn't also act
@@ -11,7 +11,7 @@
 // steps 16 times over 8 s once a minute rather than animating every frame. With Motion off it just moves.
 
 import './screensaver.css';
-import { prefs } from '../prefs';
+import { prefs } from '../launcherSettings';
 import { h } from '../shell/dom';
 import { shell } from '../shell/app';
 import { afterMs, clockText, createIdle, glowBackground, mix, PALETTE } from './saverModel';

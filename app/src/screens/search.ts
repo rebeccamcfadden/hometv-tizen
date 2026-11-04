@@ -3,7 +3,7 @@
 // the results to the full page, ← or Back brings the keyboard back. Typing is the on-screen keyboard, as in
 // design_preview: no text field, so the TV's own keyboard never opens. A keyboard paired with the TV and the
 // remote's number keys type too (shell onText).
-// Not here: the phone remote's typing (on the back burner on Samsung, Rebecca 19:36), and the TMDB sign-in state
+// Not here: the phone remote's typing (on the back burner on Samsung), and the TMDB sign-in state
 // (Samsung has no account yet; the mock catalogue is on the TV). Offline comes from the browser's own online state.
 
 import type { Hit } from '@hometv/core/fuzzy.ts';
@@ -195,7 +195,7 @@ export function searchScreen(): Screen {
         results,
         h(
           'div.browse',
-          // F46 (Rebecca, 2026-11-04 09:57): Browse by genre first, then the title rows as C cards.
+          // F46 (2026-11-04): Browse by genre first, then the title rows as C cards.
           h(
             'div.row',
             h('div.row-label', 'Browse by genre'),

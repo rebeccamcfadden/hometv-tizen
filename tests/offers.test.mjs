@@ -1,4 +1,4 @@
-// The offers on Samsung's one-region path (Rebecca, 2026-11-04 19:30): app/src/data/offers.ts with the Samsung
+// The offers on Samsung's one-region path (decided 2026-11-04): app/src/data/offers.ts with the Samsung
 // settings stand-in (Sweden, design_preview's first ticks), as Search, the title page, its rent dialog and the cards
 // use them.
 

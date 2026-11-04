@@ -1,6 +1,6 @@
 // The page's side of the error log (report.ts): catches HomeTV's uncaught errors and unhandled promise failures, and
-// takes the failures other code reports (an app that didn't open, a download that failed, an input that didn't
-// show). Everything goes through report.ts's allowlist before it is kept. Nothing is sent anywhere.
+// takes the failures other code reports (an app that didn't open, a download or page-update check that failed, an
+// input that didn't show). Everything goes through report.ts's allowlist before it is kept. Nothing is sent anywhere.
 
 import { HOME_APPS } from './apps';
 import { addEntry, clean, loadLog, LOG_KEY, saveLog, type ErrorKind, type Known, type LogEntry } from './report';
@@ -45,6 +45,18 @@ export function clearErrors(): void {
   } catch (e) {
     // Blocked storage: empty until the page reloads.
   }
+}
+
+let loggedCheck: number | null = null;
+
+/**
+ * A page-update check that failed (the loader's status, bridge.platform.pageUpdates()): one entry per check, saying
+ * only that it was a page update. No address, no version.
+ */
+export function noteUpdateCheck(s: { checkedAt: number | null; failed: boolean } | null): void {
+  if (!s || !s.failed || !s.checkedAt || s.checkedAt === loggedCheck) return;
+  loggedCheck = s.checkedAt;
+  recordError('fetch_failed', { what: 'page update' });
 }
 
 let watching = false;

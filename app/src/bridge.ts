@@ -1,5 +1,5 @@
 // Where the TV's functions come from, in three set-ups:
-// - **app**: HomeTV as its own Samsung app (the plan, Rebecca 18:35). The page has `tizen`, and AeroTizen's ES5
+// - **app**: HomeTV as its own Samsung app (the plan, decided 2026-11-04). The page has `tizen`, and AeroTizen's ES5
 //   scripts (vendor/aerotizen, loaded before this one) list the installed apps, read their artwork and open them;
 //   AeroTizen's background watcher brings HomeTV back after Home.
 // - **tv / fake-tv**: HomeTV as a TizenBrew module. The page has no `tizen`, so it asks the module's service

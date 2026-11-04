@@ -14,7 +14,7 @@ const about = { build: 'v0', mode: 'app', brand: 'Samsung', os: 'Tizen', osVersi
 const POISON = [
   '192.168.1.50',
   'http://192.168.1.50:8766/report',
-  'fe80::1c2b:3aff:fe4d:5e6f',
+  'fe80::1',
   'someone@example.com',
   'MyHomeWiFi-5G',
   'Severance S01E03',
@@ -63,7 +63,7 @@ test('only allowlisted fields, with allowed values: poison in every field and in
   for (const p of POISON) {
     // A poison string may only show up as a whole allowed word that happens to be inside it ("app" in an id): check
     // the risky parts directly.
-    for (const bit of ['192.168', 'fe80', '@example', 'MyHomeWiFi', 'Severance', 'Knives', 'SERIAL', 'duid', 'AA:BB', 'abc123secret', 'Twtch', 'xxxxxxxx']) {
+    for (const bit of ['192.168', 'fe80::', '@example', 'MyHomeWiFi', 'Severance', 'Knives', 'SERIAL', 'duid', 'AA:BB', 'abc123secret', 'Twtch', 'xxxxxxxx']) {
       assert.ok(!stored.includes(bit), `stored: ${bit} (from ${p.slice(0, 30)})`);
       assert.ok(!report.includes(bit), `report: ${bit}`);
     }
@@ -142,4 +142,21 @@ test('the report: what HomeTV runs on, newest first, and nothing sent', () => {
   assert.match(reportText([], about, when), /No problems noted\.$/);
   const odd = reportText([], { ...about, brand: 'Sam sung 192.168.1.50', osVersion: '192.168.1.50', screen: 'big' }, when);
   assert.ok(!odd.includes('192.168'), odd);
+});
+
+test('a failed page-update check is noted once per check, as a page update and nothing more', async () => {
+  const { loadTs } = await import('./ts-module.mjs');
+  const m = memory();
+  globalThis.window = { localStorage: m, addEventListener() {} };
+  const { noteUpdateCheck, errorLog } = await loadTs('errors.ts');
+  noteUpdateCheck(null);
+  noteUpdateCheck({ checkedAt: 1000, failed: false });
+  assert.equal(errorLog().length, 0);
+  noteUpdateCheck({ checkedAt: 2000, failed: true, url: 'https://updates.example.com/page.json' });
+  noteUpdateCheck({ checkedAt: 2000, failed: true });
+  assert.equal(errorLog().length, 1);
+  assert.deepEqual(errorLog()[0].fields, { what: 'page update' });
+  noteUpdateCheck({ checkedAt: 3000, failed: true });
+  assert.equal(errorLog()[0].n, 2, 'the next failed check counts up');
+  assert.ok(!m.raw.get(LOG_KEY).includes('example.com'));
 });

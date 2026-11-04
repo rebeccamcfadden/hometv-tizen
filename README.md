@@ -8,14 +8,13 @@ Samsung app**: a web page (`app/`) with background services (`service/`), instal
 Developer Mode. A TizenBrew module is the fallback.
 
 **Built on [AeroTizen](https://github.com/helalaou/AeroTizen) by Hamza El Alaoui** (MIT), kept unmodified in
-`vendor/aerotizen/`: its install tool, certificate step and Home helper are what HomeTV uses on Samsung
-([docs/aerotizen-plan.md](docs/aerotizen-plan.md)). Its licence is in [LICENSE](LICENSE) and `vendor/aerotizen/LICENSE`.
-The shared logic comes from hometv-launcher's `packages/core` (MIT), a submodule.
+`vendor/aerotizen/`: its install tool, certificate step and Home helper are what HomeTV uses on Samsung. Its licence
+is in [LICENSE](LICENSE) and `vendor/aerotizen/LICENSE`. The shared logic comes from hometv-launcher's
+`packages/core` (MIT), a submodule.
 
-**Status:** built and checked on Samsung's TV emulator and a PC with a fake TV; never run on a real TV yet. The plan
-by version: [docs/versions.md](docs/versions.md). What we know so far: [docs/research.md](docs/research.md). The first
-call with a real TV: [docs/tv-call-checklist.md](docs/tv-call-checklist.md). How another TV's port shares the screens:
-[docs/platform.md](docs/platform.md). Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off),
+**Status:** built and checked on Samsung's TV emulator and a PC with a fake TV; never run on a real TV yet. What we know
+so far: [docs/research.md](docs/research.md). How another TV's port shares the screens: [docs/platform.md](docs/platform.md).
+Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off),
 [docs/launcher-replacement.md](docs/launcher-replacement.md) (how far a home screen can replace Samsung's),
 [docs/jailbreak.md](docs/jailbreak.md) (the options, safest first).
 
@@ -52,9 +51,9 @@ npm test
 The keyboard stands in for the remote: arrows, Enter for OK (held down: the hold-OK menu, in All apps and on Home's
 apps: Move, Remove from Home, App info), Esc or Backspace for Back, C (the Blue or Info key on the remote) for the
 Checks screen. The nav's right side has Wi-Fi, Inputs and Settings; on a PC they say where the TV's own settings are.
-The clock screensaver is off until a time is picked in Settings; `?saver=fast` turns it on with a minute as 2 s (10 s
-of idle Home), to see it sooner.
-**Report a problem** (on the Checks screen) shows the last problems HomeTV noted on the TV, as text and a QR of that
+The clock screensaver is off until a time is picked in Settings › Screensaver; `?saver=fast` turns it on with a minute
+as 2 s (10 s of idle Home), to see it sooner.
+**Report a problem** (Settings › About, or the Checks screen) shows the last problems HomeTV noted on the TV, as text and a QR of that
 text: nothing is sent, and only allowlisted fields are kept (`app/src/report.ts`). On Search (the magnifier at the top
 of Home, or in the nav) letters and digits type, as the on-screen keyboard does. The pill at the top says where it
 runs: **On the TV**, **Fake TV on this PC**,
@@ -62,6 +61,14 @@ or **Preview** (no service: `npm run dev -- --no-service`).
 
 The fake TV has Netflix and Prime Video only under their pre-2020 ids and no Hulu, so the service's fallback and
 "not on this TV" show; a few Samsung apps (made-up ids) fill All apps and its TV Utilities folder. `/report` on port 8766, opened from a phone on the same Wi-Fi, lists every check's result.
+
+**First run** shows on the first start (until it's done or skipped; clear the page's `hometv-setup-done` in
+localStorage to see it again): the region (Sweden or the United States, one at a time) and the weather city.
+**Settings** (Home's lower row, or the nav's Settings › Launcher settings) has Performance (Motion), Screensaver, Home
+row apps, Weather, Region, First run and About. The weather under Home's clock
+comes from Open-Meteo (no key, so it needs the internet): the place search asks `geocoding-api.open-meteo.com` with
+what was typed, the forecast asks `api.open-meteo.com` with the chosen place's position, at most every 30 minutes.
+Offline, Home shows the last forecast with its age, or no weather.
 
 **API keys** (Home's lower row) shows the QR for the key page. In `npm run dev` its service is on 8767 and checks keys fake services: a key with `good` in it works, one with `offline` can't be reached, any other is refused.
 

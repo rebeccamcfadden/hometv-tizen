@@ -1,6 +1,6 @@
 # Samsung TV: turning off tracking, analytics and ads
 
-Research for Rebecca, 2026-11-04. Nothing here has been run on any TV. It goes further than upstream's guide
+Research, 2026-11-04. Nothing here has been run on any TV. It goes further than upstream's guide
 ([cleanyour.tv/not-android](https://cleanyour.tv/not-android)), which covers the main switches and a DNS table.
 Every step says what it stops, what it can break, and how to undo it.
 
@@ -87,7 +87,7 @@ list. Upstream's guide explains the set-up; the lists:
 | [AeroTizen `samsung-ads.txt`](https://github.com/helalaou/AeroTizen/blob/main/dns/samsung-ads.txt) | 18 names | **Recommended to start:** ads, ACR and usage telemetry only; says the store, sign-in, updates and casting keep working |
 | [HaGeZi `native.samsung`](https://github.com/hagezi/dns-blocklists) | ~190 names | Maintained; broader (Samsung phones' and Adobe's analytics too) |
 | [Perflyst `SmartTV.txt`](https://github.com/Perflyst/PiHoleBlocklist) | all brands | Its comments say which names *not* to block |
-| [AeroTizen `samsung-aggressive.txt`](https://github.com/helalaou/AeroTizen/blob/main/dns/samsung-aggressive.txt) | 25 names | **Not for a family TV:** stops firmware updates, some app downloads, sign-in and SmartThings |
+| [AeroTizen `samsung-aggressive.txt`](https://github.com/helalaou/AeroTizen/blob/main/dns/samsung-aggressive.txt) | 25 names | **Not for an everyday TV:** stops firmware updates, some app downloads, sign-in and SmartThings |
 
 **Never block** (all sources agree): `samsungotn.net` and `otnprd*.samsungcloudsolution.net` (security updates),
 `time.samsungcloudsolution.com` (the clock; Plex, YouTube and Prime Video fail without it), all of
@@ -120,12 +120,12 @@ Without root, nothing can set Samsung's privacy switches directly: no local or S
 | Script | How | Worth it? |
 |---|---|---|
 | **Press the keys through the menus** | Samsung's local remote connection (`samsungtvws`, port 8002) after the TV's "Allow" prompt | **No, as an unattended script.** Menus differ by year and firmware, a script can't see the screen, the Allow prompt may come back after every restart, and Samsung broke this connection on purpose in at least one 2021 firmware. |
-| **A guided checklist on the TV** | HomeTV shows each step ("press Settings, then …") with a photo per TV year, and a tick per step; nothing pressed for them | **Yes:** fits a family call; HomeTV can't open Samsung's settings pages, but it can walk someone through them |
+| **A guided checklist on the TV** | HomeTV shows each step ("press Settings, then …") with a photo per TV year, and a tick per step; nothing pressed for them | **Yes:** fits a call with the person at the TV; HomeTV can't open Samsung's settings pages, but it can walk someone through them |
 | **A check from a phone or PC** | Ask the home network's DNS for the tracking names (blocked?) and the "never block" names (still there?), like upstream's network check | **Yes:** small, read-only, catches a too-broad list |
 | **Read-only TV status** | `GET http://<tv>:8001/api/v2/` gives the model, Developer Mode, power state | Yes, for the guide to pick the right year's photos |
 | **Tidy apps from a PC** | AeroTizen's tool: `aerotizen apps` / `debloat` | Only Tizen 5.5 and older remove anything; deleting on the TV is simpler |
 
-**Recommendation:** a printable/phone checklist (this document's tables, in the family's TV year only), the TV's
+**Recommendation:** a printable/phone checklist (this document's tables, in that TV's year only), the TV's
 own DNS set to AdGuard as the one network step, and a small read-only network check. No key-pressing script.
 
 ## What can't be removed

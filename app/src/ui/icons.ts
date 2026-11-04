@@ -38,9 +38,16 @@ const P = {
   sound: 'M4 9.5h4l5-4v13l-5-4H4zM16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11',
   motion: 'M4 12h3M4 7h6M4 17h6M14 7l6 5-6 5',
   alert: 'M12 3.5l9.5 16.5h-19zM12 10v4.5M12 17.5h.01',
+  gauge: 'M4.5 17a8 8 0 1 1 15 0M12 14l4-5M12 14h.01',
   // Not in design_preview: a cable for Ethernet (its nav only knows Wi-Fi), and Move in Home's tile menu.
   ethernet: 'M7 3.5h10v7h-2.5v3h-5v-3H7zM10 6v2M14 6v2M12 13.5v7',
   move: 'M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4',
+  // Home's weather, Settings and first run.
+  sun: 'M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+  moon: 'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z',
+  cloud: 'M7 18h10a4 4 0 0 0 .5-8 6 6 0 0 0-11.4 1.5A3.3 3.3 0 0 0 7 18z',
+  pin: 'M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  sync: 'M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2M20 4v4h-4M4 20v-4h4',
 };
 
 export type IconName = keyof typeof P;

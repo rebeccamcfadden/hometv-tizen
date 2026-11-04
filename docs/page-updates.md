@@ -2,7 +2,7 @@
 
 HomeTV on Samsung is its own app. A new **app** still needs the laptop (`aerotizen install`). But the **page** inside
 it (the screens, their CSS and scripts) can update itself on the TV, without the laptop. This note says how, how
-Rebecca releases a page, and how to undo one.
+the project lead releases a page, and how to undo one.
 
 Nothing is public yet: there is no update server, so apps are built with updates **off** unless you set an address.
 
@@ -65,7 +65,7 @@ start. If the TV refuses inline scripts, downloaded pages are switched off for t
 
 `HomeTVBoot.status()` (in the page) says which page is shown, why, and what the last check found.
 
-## Releasing a page (Rebecca)
+## Releasing a page
 
 Once, on your PC:
 

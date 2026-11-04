@@ -523,7 +523,7 @@ test('a manifest query string is kept and the signature sits beside it', async (
   srv.offer = release('1.1.0');
   const seen = [];
   const tv = createFakeTv({
-    shellConfig: shellConfig({ updateUrl: MANIFEST + '?channel=family' }),
+    shellConfig: shellConfig({ updateUrl: MANIFEST + '?channel=beta' }),
     bundled: BUNDLED,
     routes: (url, full) => (seen.push(full), srv.routes(url)),
   });
@@ -531,8 +531,8 @@ test('a manifest query string is kept and the signature sits beside it', async (
   await app.ready;
   await app.tick(11000);
   assert.equal(app.status().lastCheck.result, 'downloaded 1.1.0');
-  assert.match(seen[0], /manifest\.json\?channel=family&t=\d+$/);
-  assert.match(seen[1], /manifest\.json\.sig\?channel=family&t=\d+$/);
+  assert.match(seen[0], /manifest\.json\?channel=beta&t=\d+$/);
+  assert.match(seen[1], /manifest\.json\.sig\?channel=beta&t=\d+$/);
 });
 
 // ---------------------------------------------------------------------------------------------------------------

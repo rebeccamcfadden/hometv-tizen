@@ -31,6 +31,11 @@ type Tz = {
     getAppsInfo?(ok: (apps: { id: string; name: string }[]) => void, err?: () => void): void;
   };
   tvinputdevice?: { registerKey(name: string): void };
+  time?: {
+    getCurrentDateTime(): { getFullYear(): number; getMonth(): number; getDate(): number; getDay(): number; getHours(): number; getMinutes(): number };
+    /** "h:m:s ap" on a 12-hour TV, "H:m:s" on a 24-hour one. */
+    getTimeFormat(): string;
+  };
   systeminfo?: {
     getPropertyValue(p: string, ok: (v: SysValue) => void, err?: () => void): void;
     addPropertyValueChangeListener?(p: string, fn: () => void): number;
@@ -52,6 +57,42 @@ type Tz = {
 };
 
 const tz = (): Tz | null => (window as unknown as { tizen?: Tz }).tizen || null;
+
+/** The TV's wall clock (platform.clock()): month 0-11, weekday 0 (Sunday) to 6, as Date has them. */
+export interface WallClock {
+  year: number;
+  month: number;
+  date: number;
+  weekday: number;
+  hours: number;
+  minutes: number;
+  /** The TV shows a 24-hour clock; null when it can't say. */
+  hour24: boolean | null;
+}
+
+/** Page updates as Settings › About shows them (platform.pageUpdates()). */
+export interface PageUpdates {
+  /** The app's version (tizen/config.xml), "0.0.2". */
+  app: string;
+  /** The page shown, "0.0.3". */
+  page: string;
+  /** The app was built with an update address and keys, so it checks. */
+  on: boolean;
+  /** A newer page downloaded and checked: it shows at the next start. */
+  next: string | null;
+  /** The last check this start, epoch ms; null before the first (ten seconds after Home). */
+  checkedAt: number | null;
+  failed: boolean;
+}
+
+/** app/loader/boot.js's HomeTVBoot.status(). */
+interface BootStatus {
+  page?: string;
+  shell?: string;
+  updates?: string;
+  next?: string | null;
+  lastCheck?: { at: string; result: string } | null;
+}
 
 /** The remote's keys the shell understands, by keyCode: Samsung's remote (TVInputDevice docs) and a PC keyboard. */
 const KEYS: Record<number, Key> = {
@@ -232,6 +273,8 @@ export const platform = {
   brand: 'Samsung',
   /** The TV's software, for the checks screen: "Tizen 6.5". */
   os: 'Tizen',
+  /** Who this platform's side is built on, for Settings › About. */
+  credits: 'Built on AeroTizen by Hamza El Alaoui (MIT), which lists and opens the TV’s apps.',
   keys: KEYS,
   buttons: BUTTONS,
 
@@ -443,6 +486,53 @@ export const platform = {
   started(): void {
     const boot = (window as unknown as { HomeTVBoot?: { started(): void } }).HomeTVBoot;
     if (boot) boot.started();
+  },
+
+  /**
+   * The TV's own clock: the date and time on its wall clock, and whether it shows a 24-hour clock (null: unknown). On
+   * the TV from `tizen.time` (its time zone and format, set in the TV's menu), since the page's `Date` may not follow
+   * the TV's time zone on every model; elsewhere, and if that fails, from `Date`.
+   */
+  clock(): WallClock {
+    const t = tz();
+    if (t && t.time) {
+      try {
+        const d = t.time.getCurrentDateTime();
+        let hour24: boolean | null = null;
+        try {
+          hour24 = !/a/i.test(t.time.getTimeFormat());
+        } catch (e) {
+          // Older TVs: unknown.
+        }
+        return { year: d.getFullYear(), month: d.getMonth(), date: d.getDate(), weekday: d.getDay(), hours: d.getHours(), minutes: d.getMinutes(), hour24 };
+      } catch (e) {
+        // Fall through to the page's clock.
+      }
+    }
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth(), date: d.getDate(), weekday: d.getDay(), hours: d.getHours(), minutes: d.getMinutes(), hour24: null };
+  },
+
+  /**
+   * Page updates (docs/page-updates.md), for Settings › About: the app's and the page's versions and what the loader's
+   * last check found. Null outside the installed app (no loader: TizenBrew, the fake TV, a preview).
+   */
+  pageUpdates(): PageUpdates | null {
+    const boot = (window as unknown as { HomeTVBoot?: { status?(): BootStatus } }).HomeTVBoot;
+    if (!boot || !boot.status) return null;
+    try {
+      const s = boot.status();
+      return {
+        app: String(s.shell || ''),
+        page: String(s.page || ''),
+        on: !!s.updates && s.updates !== 'off',
+        next: s.next || null,
+        checkedAt: s.lastCheck ? Date.parse(s.lastCheck.at) || null : null,
+        failed: !!s.lastCheck && /^failed/.test(s.lastCheck.result || ''),
+      };
+    } catch (e) {
+      return null;
+    }
   },
 
   /** The key page's TV side (screens/keys.ts): where its service runs and how the screen talks to it. */

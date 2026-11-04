@@ -12,6 +12,8 @@ import { showAllApps } from './allApps';
 import { showChecks } from './checks';
 import { showKeys } from './keys';
 import { tileMenu } from './homeTileMenu';
+import { showSettings } from './settings';
+import { homeTop } from '../ui/homeTop';
 import { V1 } from '../features';
 
 const MODE_TEXT = {
@@ -110,7 +112,7 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
     setApps(apps: AppInfo[] | null) {
       lastApps = apps;
       while (el.firstChild) el.removeChild(el.firstChild);
-      const bar = topBar('HomeTV');
+      const bar = homeTop();
       // Search, as design_preview's top bar has it: ↑ from the nav reaches it.
       const search = focusable(h('button.searchbtn', { 'aria-label': 'Search', html: icon('search', 30) }), {
         key: 'search',
@@ -125,10 +127,11 @@ export function homeScreen(): Screen & { setApps(apps: AppInfo[] | null): void }
       el.appendChild(row);
       fillRow();
       const all = focusable(h('button.button', 'All apps'), { key: 'all-apps', onOk: showAllApps });
+      const settings = focusable(h('button.button', 'Settings'), { key: 'settings', onOk: () => showSettings() });
       const checks = focusable(h('button.button', 'Checks for the TV call'), { key: 'checks', onOk: showChecks });
       // The key page is v1: keys are only needed by v1's screens.
       const keys = V1 ? focusable(h('button.button', 'API keys'), { key: 'keys', onOk: showKeys }) : null;
-      el.appendChild(h('div.lowerrow', all, checks, keys, h('span.hint', 'Blue key or Info: Checks · the remote’s Home key leaves HomeTV')));
+      el.appendChild(h('div.lowerrow', all, settings, checks, keys, h('span.hint', 'Blue key or Info: Checks · the remote’s Home key leaves HomeTV')));
       shell.refocus();
     },
     // Hold OK on a tile: Move, Remove from Home, App info (homeTileMenu.ts); while moving, it has the keys.

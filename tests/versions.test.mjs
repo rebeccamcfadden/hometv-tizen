@@ -1,4 +1,4 @@
-// v0 and v1 (docs/versions.md, app/src/features.ts): a v0 build holds no v1 screen and no sample data, and the
+// v0 and v1 (app/src/features.ts): a v0 build holds no v1 screen and no sample data, and the
 // packaging refuses sample data for a TV.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
