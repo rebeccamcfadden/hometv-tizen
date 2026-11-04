@@ -36,7 +36,21 @@ export function savedIds(myList: string[], viewed: string[]): Set<string> {
 
 export interface Outcome {
   res: SearchResults | null;
+  /**
+   * Anything to show: titles, people, or the titles of a genre that matched well. design_preview counts only titles
+   * and people, so a genre alone ("drama", from Browse by genre) said "No matches"; here it shows that genre's titles.
+   */
   hasMatches: boolean;
+}
+
+/** The titles of the genre the query matched well (score over 60), past those that matched by name. */
+function genreTitles(res: SearchResults): Hit[] {
+  const genreHit = res.genres[0];
+  if (!genreHit || genreHit.match.score <= 60) return [];
+  const matched = (t: Title) => res.titles.some((x) => x.title === t);
+  return titlesInGenre(genreHit.label)
+    .filter((t) => !matched(t))
+    .map((t) => ({ kind: 'title', label: t.name, tag: '', match: { score: 0, indices: [] }, title: t }));
 }
 
 /** A query's results. Offline, only saved titles: no people, no genres (they need the internet). */
@@ -46,23 +60,25 @@ export function runSearch(query: string, offline: boolean, saved: Set<string>): 
     const keep = (x: Hit) => x.kind === 'title' && saved.has(x.title!.id);
     res = { titles: res.titles.filter(keep), people: [], genres: [], suggestions: res.suggestions.filter(keep) };
   }
-  return { res, hasMatches: !!res && (res.titles.length > 0 || res.people.length > 0) };
+  return { res, hasMatches: !!res && (res.titles.length > 0 || res.people.length > 0 || genreTitles(res).length > 0) };
 }
 
+/** One base letter per character, lower case, as @hometv/core's fuzzy matching folds them. */
+const fold = (s: string) =>
+  s
+    .toLowerCase()
+    .split('')
+    .map((c) => c.normalize('NFD')[0])
+    .join('');
+
 /**
- * The full results under a filter chip: the matching titles, then the titles of a genre that matched well (score over
- * 60), then people.
+ * The full results under a filter chip: the matching titles, then the genre's titles, then people. A query that is
+ * a genre's name ("drama") puts the genre's titles first (the Java launcher's SearchIndex, genreFirst).
  */
-export function resultItems(res: SearchResults, filter: Filter): Hit[] {
-  const genreHit = res.genres[0];
-  const matched = (t: Title) => res.titles.some((x) => x.title === t);
-  const genreTitles: Hit[] =
-    genreHit && genreHit.match.score > 60
-      ? titlesInGenre(genreHit.label)
-          .filter((t) => !matched(t))
-          .map((t) => ({ kind: 'title', label: t.name, tag: '', match: { score: 0, indices: [] }, title: t }))
-      : [];
-  const all = res.titles.concat(genreTitles, res.people);
+export function resultItems(res: SearchResults, filter: Filter, query = ''): Hit[] {
+  const genre = genreTitles(res);
+  const exact = genre.length > 0 && fold(query).replace(/\s+/g, ' ').trim() === fold(res.genres[0].label);
+  const all = exact ? genre.concat(res.titles, res.people) : res.titles.concat(genre, res.people);
   return all.filter((x) => {
     if (filter === 'all') return true;
     if (filter === 'person') return x.kind === 'person';

@@ -237,7 +237,7 @@ export function searchScreen(): Screen {
         ),
       );
     } else {
-      const items = resultItems(res!, filter);
+      const items = resultItems(res!, filter, query);
       replace(
         results,
         h(
