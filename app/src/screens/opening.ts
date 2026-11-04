@@ -12,7 +12,8 @@ export async function openWith(plan: OpenPlan, message: string): Promise<void> {
   if (!r.ok && r.error === 'not on this TV') shell.toast(`${name} isn’t on this TV. Samsung’s Apps can add it.`, true);
   else if (!r.ok) shell.toast(`${name} didn’t open: ${r.error}`, true);
   else if (!r.id) shell.toast(`Preview: on the TV this opens ${name}.`);
-  else if (plan.how === 'link' && !r.linked) shell.toast(`${name} opened on its home: the TV didn’t take the title link.`);
+  else if (plan.how === 'link' && !r.linked) shell.toast(`${name} opens on its home: the title link didn’t go through.`);
+  else shell.toast(`${message.replace(/…$/, '')} (${r.id}).`);
 }
 
 /** Opens `t` in a service's app: the title itself where a link is known, else the app. */
