@@ -5,6 +5,10 @@ HomeTV's launcher, for Samsung TVs. Samsung TVs run Tizen, not Android, so the
 [TizenBrew](https://github.com/reisxd/TizenBrew) application module: a web page TizenBrew loads from npm, plus a small
 "service" that TizenBrew runs in the background and that keeps the TV's own functions (opening apps).
 
+**Built on [AeroTizen](https://github.com/helalaou/AeroTizen) by Hamza El Alaoui** (MIT), kept unmodified in
+`vendor/aerotizen/`: its install tool, certificate step and Home helper are what HomeTV uses on Samsung
+([docs/aerotizen-plan.md](docs/aerotizen-plan.md)). Its licence is in [LICENSE](LICENSE) and `vendor/aerotizen/LICENSE`.
+
 **Status: a spike.** It answers whether this can work before anything is built for real. What we know so far:
 [docs/research.md](docs/research.md). The first call with a real TV: [docs/tv-call-checklist.md](docs/tv-call-checklist.md).
 Sharing logic with the Android launcher's prototype: [docs/shared-package.md](docs/shared-package.md).
@@ -19,7 +23,8 @@ Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off), [docs/
 | `app/` | The page: Home's app row and the Checks screen for the TV call. TypeScript and Vite, built for Chromium 56 (2018 Samsungs). |
 | `service/service.js` | The service: opens apps (`tizen.application.launch`), lists them, runs the spike's checks, serves `/report` to a phone. Plain ES5 for Node 4.4.3. |
 | `tools/` | The fake TV for a PC (`mock-tizen.mjs`, `fake-samsung.mjs`, `dev-service.mjs`), the dev runner, the old-engine check, the emulator packaging. |
-| `tizen/` | The emulator wrapper: the same page and service as a normal app. Never for a family TV. |
+| `tizen/` | The emulator wrapper: the same page and service as HomeTV's own app. |
+| `vendor/aerotizen/` | AeroTizen, unmodified (`git subtree`, squashed, from `093c2d5`). Update: `git subtree pull --prefix vendor/aerotizen https://github.com/helalaou/AeroTizen.git main --squash`. |
 | `tests/` | `npm test`: the service against the fake TV, and the old-engine check. |
 
 ## Try it on a PC
