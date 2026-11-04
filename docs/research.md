@@ -251,7 +251,8 @@ account:
   in about 20 ms after the scripts load. The watcher's return-after-Home can only be seen on a real TV.
 - **Background services on the emulator (evening):** starting one of the app's background services (AeroTizen's
   watcher, or the key page's service) puts a blank white window in front of HomeTV, and the service never answers on
-  its port. The watcher's window goes away after a while; the key page's stays. Neither the web inspector nor the
+  its port. The watcher's window flickers in front of HomeTV, on and off, but the remote's keys still reach HomeTV underneath;
+the key page's stays. Neither the web inspector nor the
   device log works on this emulator, so it can't be looked into further here. AeroTizen and Skylight run background
   services on real Tizen 6.5-9 TVs, so this is most likely the emulator; **it must be checked on a real TV before the
   key page is relied on** (the API keys screen starts the service the first time it opens).

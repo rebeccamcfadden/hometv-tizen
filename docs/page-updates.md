@@ -113,9 +113,11 @@ before, so raise `package.json`'s version too.
   remembers the key that signed it, so pages signed with the old key are no longer shown even if the reinstall keeps
   them; they're deleted once Home shows. Then release the page again with the new key (the same version is fine).
 
-Whether reinstalling or uninstalling the app keeps its private storage (the downloaded pages and their records)
-isn't checked yet. The steps above don't depend on it. An uninstall and a fresh install start with the app's own
-page in any case if the storage goes; if it stays, the rules above still pick which page shows.
+On the emulator (Tizen 10, 2026-11-04), **reinstalling over the app keeps its stored data**: the Checks screen's
+results (in the page's localStorage) were still there after `tizen install` of a new build. So the page records
+(also in localStorage) survive a reinstall. The page files in wgt-private aren't checked; if they went, the loader
+fails to read them and falls back to the app's own page. Uninstalling isn't checked yet; the steps above don't
+depend on either.
 
 ## Trying it on a PC
 
