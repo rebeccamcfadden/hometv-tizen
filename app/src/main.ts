@@ -108,9 +108,10 @@ function toast(text: string, bad = false) {
 // ------------------------------------------------------------ Home
 
 const MODE_TEXT = {
-  tv: 'On the TV',
+  app: 'Samsung app',
+  tv: 'On the TV (TizenBrew)',
   'fake-tv': 'Fake TV on this PC',
-  preview: 'Preview: no service, apps don’t open',
+  preview: 'Preview: no TV, apps don’t open',
 };
 
 function topBar(title: string): HTMLElement {
@@ -118,7 +119,7 @@ function topBar(title: string): HTMLElement {
   bar.appendChild(el('div', 'brand', title));
   const right = el('div', 'topright');
   right.appendChild(el('span', 'pill ' + bridge.mode(), MODE_TEXT[bridge.mode()]));
-  if (bridge.problem()) bar.appendChild(el('div', 'problem', 'Service: ' + bridge.problem()));
+  if (bridge.problem()) bar.appendChild(el('div', 'problem', 'TV: ' + bridge.problem()));
   const clock = el('span', 'clock');
   const tick = () => {
     const d = new Date();
@@ -147,12 +148,26 @@ function showHome(installed: AppInfo[] | null) {
     const mark = el('span', 'mark', app.mark);
     mark.style.fontWeight = String(app.weight);
     tile.appendChild(mark);
+    // The TV's own artwork for the app when it has some (Samsung's icon cache); the wordmark stays underneath.
+    const art = bridge.artwork(app.key);
+    if (art.length) {
+      const img = el('img', 'art') as HTMLImageElement;
+      let next = 0;
+      img.onerror = () => {
+        next++;
+        if (next < art.length) img.src = art[next];
+        else img.remove();
+      };
+      img.onload = () => tile.classList.add('has-art');
+      img.src = art[0];
+      tile.appendChild(img);
+    }
     tile.appendChild(el('span', 'name', missing ? `${app.name} · not on this TV` : app.name));
     tile.addEventListener('click', async () => {
       if (missing) return toast(`${app.name} isn’t on this TV. Samsung’s Apps can add it.`, true);
       toast(`Opening ${app.name}…`);
       const r = await bridge.launch(app.key);
-      if (r.ok && r.id) toast(`Opened ${app.name} (id ${r.id}).`);
+      if (r.ok && r.id) toast(`Opening ${app.name} (${r.id}).`);
       else if (r.ok) toast(`Preview: on the TV this opens ${app.name}.`);
       else toast(`${app.name} didn’t open: ${r.error}`, true);
     });
@@ -258,11 +273,13 @@ function showChecks() {
 
 async function start(first: boolean) {
   if (first) {
+    bridge.setToast((text) => toast(text, /didn’t|refused|failed/i.test(text)));
     await bridge.connect();
     const serviceFoundMs = Date.now() - t0;
     showHome(null);
     const homeShownMs = Date.now() - t0;
-    if (bridge.mode() !== 'preview') {
+    if (bridge.mode() === 'app') toast(`Home in ${homeShownMs} ms · ${(/Chrome\/(\d+)/.exec(navigator.userAgent) || ['', '?'])[1]}`);
+    if (bridge.mode() === 'tv' || bridge.mode() === 'fake-tv') {
       bridge.check('timing', {
         homeShownMs,
         serviceFoundMs,
@@ -273,6 +290,7 @@ async function start(first: boolean) {
   }
   const apps = await bridge.apps();
   showHome(apps);
+  if (first && bridge.mode() === 'app') toast(`${bridge.appCount()} apps on this TV`);
 }
 
 start(true);

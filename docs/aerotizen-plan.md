@@ -65,7 +65,10 @@ the credit in `LICENSE` and the README. Its front end doesn't build on this PC y
 1. After Rebecca's answer on the first call: adapt the checklist if needed.
 2. ~~Subtree AeroTizen in~~; build its launcher unchanged in this repo (waits on the npm mirror); run its browser
    preview.
-3. Rename the app id; run HomeTV's Home row inside it against the fake TV.
+3. **Done (no build step, the lead's (a)):** HomeTV's page loads AeroTizen's ES5 platform scripts (`launcher/js/`:
+   config, catalogue, artwork, inventory, launching, the watcher client) unmodified, through `app/aero-glue.js`;
+   the app's background service is AeroTizen's watcher (`launcher/service/`, app id and port changed at packaging).
+   Checked on the emulator. App id renamed (`HmTvSpike0`).
 4. Port the screens one at a time, smallest first (Home, then Launcher settings, then the catalogue screens), each
    checked in the browser preview.
 5. A real TV only on the weekly calls, batched.

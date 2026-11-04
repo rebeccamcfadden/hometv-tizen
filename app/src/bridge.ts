@@ -1,12 +1,16 @@
-// Talks to the module's service (service/service.js), which holds the TV's `tizen` functions: under TizenBrew this
-// page has none. With no service (a plain browser preview), a stand-in answers so the page still works, and says
-// so on screen.
+// Where the TV's functions come from, in three set-ups:
+// - **app**: HomeTV as its own Samsung app (the plan, Rebecca 18:35). The page has `tizen`, and AeroTizen's ES5
+//   scripts (vendor/aerotizen, loaded before this one) list the installed apps, read their artwork and open them;
+//   AeroTizen's background watcher brings HomeTV back after Home.
+// - **tv / fake-tv**: HomeTV as a TizenBrew module. The page has no `tizen`, so it asks the module's service
+//   (service/service.js) on 127.0.0.1:8766: on the TV, or on a PC with the fake TV (`npm run dev`).
+// - **preview**: neither; the page still works and says so.
 
-import { APP_IDS } from './apps';
+import { HOME_APPS } from './apps';
 
 export const SERVICE = 'http://127.0.0.1:8766';
 
-export type Mode = 'tv' | 'fake-tv' | 'preview';
+export type Mode = 'app' | 'tv' | 'fake-tv' | 'preview';
 
 export interface AppInfo {
   key: string;
@@ -31,6 +35,21 @@ interface Ping {
   startedAt: string;
   addresses?: string[];
 }
+
+/** The parts of AeroTizen's scripts HomeTV uses (vendor/aerotizen/launcher/js). */
+interface AeroApp {
+  id: string;
+  name: string;
+  icon: string;
+}
+interface Aero {
+  apps: { all: AeroApp[]; ready: boolean; load(done: (ok: boolean) => void): void; launch(app: AeroApp): void };
+  tiles: { describe(app: AeroApp): { artwork: string[]; title: string } };
+  homewatch: { start(): void };
+  toast: { flush?: () => void };
+}
+
+const w = window as unknown as { tizen?: unknown; AeroTizen?: Aero; hometvToast?: (text: string) => void };
 
 /** XMLHttpRequest with a timeout: Chromium 56 has fetch but no AbortController. */
 function request<T>(method: 'GET' | 'POST', path: string, body?: unknown, timeoutMs = 15000): Promise<T> {
@@ -57,91 +76,46 @@ let ping: Ping | null = null;
 let problem = '';
 const previewLog: Result[] = [];
 
-interface TizenLike {
-  ApplicationControl: new (operation: string) => unknown;
-  application: {
-    getCurrentApplication(): { appInfo: { packageId: string } };
-    launchAppControl(c: unknown, id: string, ok: () => void, err: (e: { message: string }) => void): void;
-  };
-}
-
-/** Running as its own app (not under TizenBrew), the page has `tizen` and can start the service itself. */
-function startServiceHere(): Promise<string> {
-  const tz = (window as unknown as { tizen?: TizenLike }).tizen;
-  if (!tz || !tz.application) return Promise.resolve('no tizen in the page');
-  return new Promise((resolve) => {
-    try {
-      const pkg = tz.application.getCurrentApplication().appInfo.packageId;
-      tz.application.launchAppControl(
-        new tz.ApplicationControl('http://tizen.org/appcontrol/operation/service'),
-        pkg + '.HomeTVService',
-        () => resolve('service start requested'),
-        (e) => resolve('service start refused: ' + e.message),
-      );
-    } catch (e) {
-      resolve('service start threw: ' + (e as Error).message);
-    }
-  });
-}
-
-/** Emulator wrapper only: tizen/service-host.js answers on 8767 with why the service didn't start. */
-function serviceProblem(): Promise<string> {
-  return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', 'http://127.0.0.1:8767/');
-    xhr.timeout = 1500;
-    xhr.onload = () => resolve('host says: ' + xhr.responseText.slice(0, 300));
-    xhr.onerror = () => resolve('host silent');
-    xhr.ontimeout = () => resolve('host silent');
-    xhr.send();
-  });
-}
-
-/** Whether the TV lists the service as running. */
-function serviceRunning(): Promise<string> {
-  const tz = (window as unknown as { tizen?: { application: { getAppsContext(ok: (l: { appId: string }[]) => void, err: (e: { message: string }) => void): void } } }).tizen;
-  if (!tz) return Promise.resolve('');
-  return new Promise((resolve) => {
-    try {
-      tz.application.getAppsContext(
-        (list) => resolve(list.some((c) => /HomeTVService$/.test(c.appId)) ? 'service running' : 'service not running'),
-        (e) => resolve('contexts: ' + e.message),
-      );
-    } catch (e) {
-      resolve('contexts threw: ' + (e as Error).message);
-    }
-  });
-}
-
-/** Opens an app with the page's own `tizen` (HomeTV as its own app), trying each id. */
-async function launchHere(app: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
-  const tz = (window as unknown as { tizen?: { application: { launch(id: string, ok: () => void, err: (e: { name: string; message: string }) => void): void } } }).tizen;
-  if (!tz || !tz.application) return { ok: true, id: null, error: 'preview: nothing to open' };
-  let error = 'unknown app';
-  for (const id of APP_IDS[app] || []) {
-    error = await new Promise<string>((resolve) => {
-      try {
-        tz.application.launch(id, () => resolve(''), (e) => resolve(`${e.name}: ${e.message}`));
-      } catch (e) {
-        resolve((e as Error).message);
-      }
-    });
-    if (!error) return { ok: true, id };
-  }
-  return { ok: false, id: null, error };
+/** The installed app for a Home tile, by name (AeroTizen's catalogue keys differ from ours). */
+function installedFor(key: string): AeroApp | null {
+  const aero = w.AeroTizen;
+  const tile = HOME_APPS.filter((a) => a.key === key)[0];
+  if (!aero || !tile) return null;
+  const want = tile.name.toLowerCase();
+  return (
+    aero.apps.all.filter((a) => {
+      const n = a.name.toLowerCase();
+      return n.indexOf(want) === 0 || (key === 'max' && n === 'max');
+    })[0] || null
+  );
 }
 
 export const bridge = {
   mode: () => mode,
-  /** Why the service wasn't found, for the screen (empty when it was). */
+  /** Why the TV's functions weren't found, for the screen (empty when they were). */
   problem: () => problem,
   addresses: () => (ping && ping.addresses) || [],
+  /** How many apps the TV listed (own-app mode). */
+  appCount: () => (w.AeroTizen && w.AeroTizen.apps ? w.AeroTizen.apps.all.length : 0),
 
-  /** Finds the service; retries briefly, since TizenBrew may start it just after the page. */
+  /** Lets AeroTizen's scripts show their messages in HomeTV's toast. */
+  setToast(fn: (text: string) => void) {
+    w.hometvToast = fn;
+    if (w.AeroTizen && w.AeroTizen.toast && w.AeroTizen.toast.flush) w.AeroTizen.toast.flush();
+  },
+
   async connect(tries = 4): Promise<Mode> {
+    if (w.tizen && w.AeroTizen && w.AeroTizen.apps) {
+      mode = 'app';
+      try {
+        w.AeroTizen.homewatch.start();
+      } catch (e) {
+        problem = 'watcher: ' + (e as Error).message;
+      }
+      return mode;
+    }
     let lastError = '';
-    let started = '';
-    for (let i = 0; i < tries + 4; i++) {
+    for (let i = 0; i < tries; i++) {
       try {
         ping = await request<Ping>('GET', '/ping', undefined, 1500);
         mode = ping.fake ? 'fake-tv' : ping.tizen ? 'tv' : 'preview';
@@ -149,18 +123,24 @@ export const bridge = {
         return mode;
       } catch (e) {
         lastError = (e as Error).message;
-        if (i === tries - 1 && !started) started = await startServiceHere();
-        if (i >= tries && started.indexOf('requested') < 0) break;
-        await new Promise((r) => setTimeout(r, 600));
+        await new Promise((r) => setTimeout(r, 400));
       }
     }
     mode = 'preview';
-    problem = `${lastError}${started ? '; ' + started : ''}`;
-    if (started) problem += '; ' + (await serviceRunning()) + '; ' + (await serviceProblem());
+    problem = w.tizen ? lastError : '';
     return mode;
   },
 
   async apps(): Promise<AppInfo[] | null> {
+    if (mode === 'app') {
+      const aero = w.AeroTizen!;
+      const ok = await new Promise<boolean>((resolve) => aero.apps.load(resolve));
+      if (!ok) {
+        problem = 'the TV didn’t list its apps';
+        return null;
+      }
+      return HOME_APPS.map((t) => ({ key: t.key, name: t.name, installed: !!installedFor(t.key) }));
+    }
     if (mode === 'preview') return null;
     try {
       const r = await request<{ apps: AppInfo[] }>('GET', '/apps');
@@ -170,11 +150,23 @@ export const bridge = {
     }
   },
 
-  /** Opens an app; the answer says which id worked. As its own app, the page opens it itself. */
-  async launch(app: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
-    if (mode === 'preview') return launchHere(app);
+  /** The TV's own artwork for a Home tile, when it has some (AeroTizen reads Samsung's icon cache). */
+  artwork(key: string): string[] {
+    const app = mode === 'app' ? installedFor(key) : null;
+    return app && w.AeroTizen ? w.AeroTizen.tiles.describe(app).artwork : [];
+  },
+
+  /** Opens an app. As its own app, AeroTizen's launcher opens it and reports failures through the toast. */
+  async launch(key: string): Promise<{ ok: boolean; id: string | null; error?: string }> {
+    if (mode === 'app') {
+      const app = installedFor(key);
+      if (!app) return { ok: false, id: null, error: 'not on this TV' };
+      w.AeroTizen!.apps.launch(app);
+      return { ok: true, id: app.id };
+    }
+    if (mode === 'preview') return { ok: true, id: null };
     try {
-      const r = await request<{ ok: boolean; id: string | null; tried: { error: string | null }[] }>('POST', '/launch', { app });
+      const r = await request<{ ok: boolean; id: string | null; tried: { error: string | null }[] }>('POST', '/launch', { app: key });
       const last = r.tried[r.tried.length - 1];
       return { ok: r.ok, id: r.id, error: r.ok ? undefined : (last && last.error) || 'not opened' };
     } catch (e) {
@@ -183,8 +175,8 @@ export const bridge = {
   },
 
   async check(name: string, params: Record<string, unknown> = {}): Promise<Result> {
-    if (mode === 'preview') {
-      const r = { at: new Date().toISOString(), check: name, ok: false, detail: { error: 'preview: no service' } };
+    if (mode === 'preview' || mode === 'app') {
+      const r = { at: new Date().toISOString(), check: name, ok: false, detail: { error: 'checks run under TizenBrew only' } };
       previewLog.push(r);
       return r;
     }
@@ -196,7 +188,7 @@ export const bridge = {
   },
 
   async results(): Promise<Result[]> {
-    if (mode === 'preview') return previewLog.slice();
+    if (mode === 'preview' || mode === 'app') return previewLog.slice();
     try {
       return await request<Result[]>('GET', '/results');
     } catch (e) {

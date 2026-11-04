@@ -12,25 +12,6 @@ export interface HomeApp {
   bg: string;
 }
 
-/**
- * Samsung's app ids, newer first, for opening apps straight from the page when HomeTV runs as its own app. The same
- * table is in service/service.js (APPS), for the TizenBrew module; tests/app-ids.test.mjs keeps the two equal.
- */
-export const APP_IDS: Record<string, string[]> = {
-  netflix: ['3201907018807', '11101200001'],
-  youtube: ['111299001912'],
-  prime: ['3201910019365', '3201512006785'],
-  disney: ['3202204027038', '3202009021709', '3201901017640'],
-  max: ['3202301029760', '3201601007230'],
-  appletv: ['3201807016597'],
-  hulu: ['3201601007625'],
-  peacock: ['3202006020991'],
-  paramount: ['3202110025305', '3201710014981'],
-  spotify: ['3201606009684'],
-  plex: ['3201512006963'],
-  tubi: ['3201504001965'],
-  pluto: ['3201808016802'],
-};
 
 export const HOME_APPS: HomeApp[] = [
   { key: 'netflix', name: 'Netflix', mark: 'NETFLIX', weight: 700, bg: '#141414' },

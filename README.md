@@ -20,10 +20,10 @@ Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off), [docs/
 | Path | What it is |
 |---|---|
 | `package.json` | The module as TizenBrew reads it: `packageType: app`, `appPath`, `serviceFile`, the remote keys to register. |
-| `app/` | The page: Home's app row and the Checks screen for the TV call. TypeScript and Vite, built for Chromium 56 (2018 Samsungs). |
+| `app/` | The page: Home's app row and the Checks screen for the TV call. TypeScript and Vite, built for Chromium 56 (2018 Samsungs). `app/aero-glue.js` connects AeroTizen's scripts to it. |
 | `service/service.js` | The service: opens apps (`tizen.application.launch`), lists them, runs the spike's checks, serves `/report` to a phone. Plain ES5 for Node 4.4.3. |
 | `tools/` | The fake TV for a PC (`mock-tizen.mjs`, `fake-samsung.mjs`, `dev-service.mjs`), the dev runner, the old-engine check, the emulator packaging. |
-| `tizen/` | The emulator wrapper: the same page and service as HomeTV's own app. |
+| `tizen/` | HomeTV as its own Samsung app: `config.xml`; `tools/package-tizen.mjs` adds the page and AeroTizen's Home watcher (its app id and port changed) and signs it. |
 | `vendor/aerotizen/` | AeroTizen, unmodified (`git subtree`, squashed, from `093c2d5`). Update: `git subtree pull --prefix vendor/aerotizen https://github.com/helalaou/AeroTizen.git main --squash`. |
 | `tests/` | `npm test`: the service against the fake TV, and the old-engine check. |
 

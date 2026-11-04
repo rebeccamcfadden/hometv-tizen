@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- For the Tizen TV emulator only: the module's page and service as a normal app, started the way TizenBrew starts
-     them (boot.html starts the service, then moves to the page). Never installed on a family TV: there TizenBrew
-     loads the module from npm. tools/package-tizen.mjs builds the .wgt. Privileges are TizenBrew's own, plus
-     application.info, so the emulator shows whether listing apps needs it. -->
-<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="https://github.com/rebeccamcfadden/hometv-tizen" version="0.0.1" viewmodes="maximized">
-    <access origin="*" subdomains="true"></access>
-    <tizen:application id="HmTvSpike0.HomeTVSpike" package="HmTvSpike0" required_version="3.0"/>
-    <content src="boot.html"/>
-    <feature name="http://tizen.org/feature/screen.size.all"/>
-    <feature name="http://tizen.org/feature/web.service"/>
+<!-- HomeTV as its own Samsung app (Rebecca, 2026-11-04 18:35), on AeroTizen's base: HomeTV's page (dist/) with
+     AeroTizen's ES5 platform scripts (dist/aero/), and AeroTizen's Home watcher as the background service
+     (aero/service/, copied unmodified by tools/package-tizen.mjs except its app id and port). The spike's id. -->
+<widget xmlns:tizen="http://tizen.org/ns/widgets" xmlns="http://www.w3.org/ns/widgets" id="https://github.com/rebeccamcfadden/hometv-tizen" version="0.0.2" viewmodes="maximized">
     <name>HomeTVSpike</name>
+    <content src="dist/index.html"/>
+    <tizen:app-control>
+        <tizen:src name="dist/index.html" reload="disable"/>
+        <tizen:operation name="http://tizen.org/appcontrol/operation/main"/>
+    </tizen:app-control>
+    <tizen:application id="HmTvSpike0.HomeTVSpike" package="HmTvSpike0" required_version="3.0"/>
+    <tizen:service id="HmTvSpike0.HomeTVWatcher" on-boot="true" auto-restart="true">
+        <tizen:content src="aero/service/index.js"/>
+        <tizen:name>HomeTVWatcher</tizen:name>
+        <tizen:description>Brings HomeTV back when Home is pressed inside an app (AeroTizen's watcher)</tizen:description>
+    </tizen:service>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <tizen:profile name="tv-samsung"/>
+    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="enable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+    <tizen:metadata key="http://samsung.com/tv/metadata/prelaunch.support" value="true"/>
+    <access origin="*" subdomains="true"/>
     <tizen:privilege name="http://tizen.org/privilege/internet"/>
     <tizen:privilege name="http://developer.samsung.com/privilege/network.public"/>
-    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <tizen:privilege name="http://tizen.org/privilege/filesystem.read"/>
+    <tizen:privilege name="http://tizen.org/privilege/filesystem.write"/>
     <tizen:privilege name="http://tizen.org/privilege/application.launch"/>
     <tizen:privilege name="http://tizen.org/privilege/application.info"/>
-    <tizen:profile name="tv-samsung"/>
-    <tizen:service id="HmTvSpike0.HomeTVService">
-        <tizen:content src="service-host.js"/>
-        <tizen:name>HomeTVService</tizen:name>
-        <tizen:description>HomeTV spike service</tizen:description>
-    </tizen:service>
-    <tizen:setting screen-orientation="landscape" context-menu="disable" background-support="enable" encryption="disable" install-location="auto" hwkey-event="enable"/>
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
 </widget>

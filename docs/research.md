@@ -233,6 +233,14 @@ account:
 - Only Samsung-signed apps install; Tizen's own sample certificates are refused.
 - How to repeat: `npm run build`, `node tools/package-tizen.mjs --profile <Samsung profile>`, `tizen install`, then
   `tools/emulator-shot.ps1` for a picture and `ecp-cli keycode` for remote keys (28 OK, 103/108/105/106 arrows).
+- **On AeroTizen's base** (later the same day): the app now loads AeroTizen's ES5 platform scripts unmodified and
+  runs its Home watcher as the background service. On the emulator HomeTV opens in "Samsung app" mode, AeroTizen's
+  inventory lists the TV's apps (none of the streaming apps there, correctly: it lists 0 user apps), and Home draws
+  in about 20 ms after the scripts load. The watcher's return-after-Home can only be seen on a real TV.
+
+**YouTube can open a video** (from AeroTizen's source, device-tested by its author): an app control to YouTube with
+`operation/view` and `PAYLOAD` = `{"values":"v=<video id>"}` (its fireplace tile). That's the fourth title-link
+candidate, the most likely to work; the second call's checks use it.
 
 ## Open questions for the TV (in the checklist)
 

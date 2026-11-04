@@ -254,7 +254,10 @@ CHECKS.linkAppControl = function (params, cb) {
     once(
       8000,
       function (done) {
-        var control = new tizen.ApplicationControl('http://tizen.org/appcontrol/operation/view', t.url, null, null, [
+        // YouTube takes the video as PAYLOAD with no link (AeroTizen's fireplace tile, device-tested); the others get
+        // the title's web link.
+        var uri = params.app === 'youtube' ? null : t.url;
+        var control = new tizen.ApplicationControl('http://tizen.org/appcontrol/operation/view', uri, null, null, [
           new tizen.ApplicationControlData('PAYLOAD', [JSON.stringify({ values: t.meta })])
         ]);
         tizen.application.launchAppControl(
