@@ -16,7 +16,7 @@
 
 import './library.css';
 import type { Kind, Title } from '@hometv/core/types.ts';
-import { FIRST_LIST, lists, MY_LIST } from '../data/lists';
+import { FAVORITES_LIST, FIRST_LIST, HOUSEHOLD_LISTS, lists, SEEN_LIST } from '../data/lists';
 import { isOwnIncluded, offersOf } from '../data/offers';
 import { store } from '../data/store';
 import { live } from '../live/live';
@@ -34,9 +34,15 @@ import { defaultSort, recentRanks, SORTS, sortsFor, sortTitles, type SortId } fr
 import { showKeys } from './keys';
 import { titlePage } from './title';
 import type { Phase } from '../live/source';
+import { accounts } from '../account/tv';
 
 /** 'my', or a TMDB list id from data/lists.ts. */
 type ListChoice = string;
+
+/** The titles on one of the household's lists (data/store.ts). */
+const householdIds = (l: ListChoice) => (l === FAVORITES_LIST ? store.favoriteIds() : l === SEEN_LIST ? store.seenIds() : store.myListIds());
+const emptyHint = (l: ListChoice) =>
+  l === FAVORITES_LIST ? 'Add titles with Favorite on a title page.' : l === SEEN_LIST ? 'Mark titles seen on a title page.' : 'Add titles with + My list on a title page.';
 
 /** F2: an hour away, the page starts again with no filters, the first list and its order. */
 const AWAY_MS = 60 * 60 * 1000;
@@ -76,8 +82,8 @@ export function libraryScreen(kind: Kind): Screen {
 
   /** The titles on the chosen list so far, and where the answer stands. */
   const pool = (): Pool => {
-    if (list === MY_LIST) {
-      const ids = store.myListIds().filter((id) => {
+    if (HOUSEHOLD_LISTS.indexOf(list) >= 0) {
+      const ids = householdIds(list).filter((id) => {
         const p = parseId(id);
         return !!p && p.kind === kind;
       });
@@ -135,7 +141,7 @@ export function libraryScreen(kind: Kind): Screen {
   const notice = (title: string, note: string, action?: HTMLElement) => h('div.empty', h('div.empty-title', title), h('div.empty-note', note), action || '');
 
   const render = () => {
-    const mine = list === MY_LIST;
+    const mine = HOUSEHOLD_LISTS.indexOf(list) >= 0;
     const view = pool();
     // Before the key has been read, "no key" is only "not yet".
     const phase: Phase = view.phase === 'nokey' && live.hasKey() ? 'loading' : view.phase;
@@ -197,7 +203,7 @@ export function libraryScreen(kind: Kind): Screen {
       }),
     );
 
-    const recent = sort === 'recent' ? recentRanks([store.myListIds()]) : undefined;
+    const recent = sort === 'recent' ? recentRanks([householdIds(list)]) : undefined;
     // Availability and Length read details, which a list entry hasn't: while one is on, the list's titles load a few at
     // a time and are judged as they arrive (the ones still loading don't pass).
     const needing = defs.some((d) => NEEDS_DETAILS.indexOf(d.id) >= 0 && (filters[d.id] || 0) !== 0);
@@ -216,7 +222,7 @@ export function libraryScreen(kind: Kind): Screen {
         ? h('span.offline-pill', h('span', { html: icon('wifiOff', 24) }), all.length ? 'Offline · showing the last catalogue' : 'Offline')
         : h('span.lib-scope-text', live.hasKey() ? 'Movies and shows from TMDB' : 'Add a TMDB key to see movies and shows'),
     );
-    replace(contextEl, mine ? 'Your collection · My list' : 'Browse TMDB');
+    replace(contextEl, mine ? `Your collection · ${listName(list)}` : 'Browse TMDB');
 
     if (phase === 'nokey') {
       drawGrid('nokey', () => [
@@ -236,7 +242,7 @@ export function libraryScreen(kind: Kind): Screen {
       ]);
     } else if (!all.length) {
       drawGrid(`empty:${list}`, () => [
-        notice(mine ? 'Nothing on My list yet' : `No ${noun} on ${listName(list)}`, mine ? 'Add titles with + My list on a title page.' : 'Try another list.'),
+        notice(mine ? `Nothing on ${listName(list)} yet` : `No ${noun} on ${listName(list)}`, mine ? emptyHint(list) : 'Try another list.'),
       ]);
     } else if (!shown.length) {
       drawGrid(`hidden:${list}:${all.length}:${summary(defs, filters)}`, () => [
@@ -318,6 +324,8 @@ export function libraryScreen(kind: Kind): Screen {
       }
       leftAt = null;
       showing = true;
+      // Signed in to TMDB: My list, Favorites and Seen sync while a list page shows (account/account.ts).
+      accounts().shown();
       try {
         render();
       } finally {

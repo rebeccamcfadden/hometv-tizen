@@ -2,7 +2,7 @@
 // ported with Movies and TV Shows (W4, design_preview's screens/person.ts). That module sets `routes.person`.
 import { shell } from '../shell/app';
 
-export const routes: { person: ((name: string, id: number) => void) | null } = { person: null };
+export const routes: { person: ((name: string, id: number) => void) | null; account: (() => void) | null } = { person: null, account: null };
 
 /** The person page for TMDB's person `id` (0 when it isn't known), named `name` until it loads. */
 export function openPerson(name: string, id = 0) {
