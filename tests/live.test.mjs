@@ -343,3 +343,14 @@ test('an empty search asks nothing', async () => {
   assert.deepEqual((await a.client.search('   ')).value, { titles: [], people: [], extra: [] });
   assert.equal(a.log.length, 0);
 });
+
+test('a genre is discovered by its id: well voted, popular first, the region for movies only', () => {
+  assert.equal(t.genreId('movie', 'Sci-fi'), 878);
+  assert.equal(t.genreId('show', 'Sci-fi'), 10765, 'TV’s combined Sci-Fi & Fantasy');
+  assert.equal(t.genreId('movie', 'Soap'), null);
+  const m = t.discoverReq('movie', 878, 'se').path;
+  assert.equal(m, '/discover/movie?with_genres=878&sort_by=popularity.desc&vote_count.gte=200&include_adult=false&language=en-US&region=SE&page=1');
+  assert.ok(!t.discoverReq('show', 10765, 'se').path.includes('region='));
+  assert.ok(!/api_key|Bearer/.test(m));
+});
+
