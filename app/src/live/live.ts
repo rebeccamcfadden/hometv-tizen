@@ -75,7 +75,7 @@ function tickInstalled(): void {
   bridge
     .installedApps()
     .then((apps) => {
-      if (apps) settings.set({ services: installedPicks(apps, pickServices(), idOfKey) });
+      if (apps && apps.length) settings.set({ services: installedPicks(apps, pickServices(), idOfKey) });
     })
     .catch(() => undefined);
 }
@@ -91,6 +91,8 @@ function checkKey(): void {
   if (r !== region) {
     region = r;
     source.setKey(key);
+    // The other region starts from its own default ticks (settings.ts); the installed apps tick them again.
+    tickInstalled();
   }
   bridge.platform.keyPages
     .priceKeys()

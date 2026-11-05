@@ -27,12 +27,10 @@ export function createPrefetch(need: (id: string) => { phase: Phase }, on: (fn: 
 
   return {
     ask(ids) {
-      let room = cap;
-      for (const id of ids) {
-        if (room <= 0) break;
+      // Only a list's first `cap` titles, however often a screen asks again: a redraw must not walk on down the list.
+      for (const id of ids.slice(0, cap)) {
         if (seen[id]) continue;
         seen[id] = true;
-        room--;
         queued.push(id);
       }
       pump();
