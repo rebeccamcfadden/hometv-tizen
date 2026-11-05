@@ -210,6 +210,7 @@ export function createSource(client: Client, key: () => string): Source {
 
     retry() {
       generation++;
+      client.forgetFailures();
       let any = false;
       for (const t of [lists, details, seasons, people, searches, genres] as Record<string, View<unknown>>[]) {
         for (const k of Object.keys(t)) {

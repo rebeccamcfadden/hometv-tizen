@@ -68,9 +68,21 @@ export function searchScreen(): Screen {
 
   const el = h('div.screen.search', topBar('Search'), bar, panel, viewport);
 
+  // TMDB is asked about the query only once typing pauses, not for every letter; the screen shows "Searching…" meanwhile.
+  let asked = '';
+  let askTimer: number | undefined;
+  const ASK_AFTER = 350;
+
   function setQuery(q: string) {
     query = tidyQuery(q);
     if (!query) expanded = false;
+    window.clearTimeout(askTimer);
+    if (query && query !== asked) {
+      askTimer = window.setTimeout(() => {
+        asked = query;
+        if (shell.top() === screen) render();
+      }, ASK_AFTER);
+    }
     render();
   }
 
@@ -147,8 +159,9 @@ export function searchScreen(): Screen {
   function render() {
     const offline = isOffline();
     // A search waits for TMDB when online with a key; without a key, or when TMDB can't be reached, the saved titles answer.
-    const view = query && !offline ? live.search(query) : null;
-    const phase = view ? (view.phase === 'nokey' && live.hasKey() ? 'loading' : view.phase) : 'ready';
+    const waiting = !!query && !offline && query !== asked;
+    const view = query && !offline && !waiting ? live.search(query) : null;
+    const phase = waiting ? 'loading' : view ? (view.phase === 'nokey' && live.hasKey() ? 'loading' : view.phase) : 'ready';
     const noKey = phase === 'nokey';
     const asking = phase === 'loading';
     const fallback = offline || phase === 'offline' || phase === 'error' || noKey;
@@ -157,7 +170,7 @@ export function searchScreen(): Screen {
     const src: Sources = {
       found: view && phase === 'ready' ? view.value : null,
       saved: fallback ? saved : [],
-      genre: (name) => (offline ? [] : live.genre(name).value),
+      genre: (name) => (offline || waiting ? [] : live.genre(name).value),
     };
     const out = runSearch(query, src);
     const res = out.res;
@@ -347,6 +360,7 @@ export function searchScreen(): Screen {
     // Leaving for another tab, or Back to Home, forgets the search, so coming back shows the empty page with focus as
     // on the first visit. A title pushed over Search keeps it.
     onLeave() {
+      window.clearTimeout(askTimer);
       query = '';
       filter = 'all';
       expanded = false;

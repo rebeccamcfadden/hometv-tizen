@@ -56,6 +56,8 @@ export interface Client {
   /** The popular titles of a genre of this kind; an empty answer when the kind has no such genre. */
   genre(kind: Kind, name: string): Promise<Result<LiveTitle[]>>;
   search(query: string): Promise<Result<Searched>>;
+  /** The minute's wait after a failed address ends now (the network came back, or the household asked to try again). */
+  forgetFailures(): void;
 }
 
 export function createClient(deps: Deps): Client {
@@ -102,6 +104,10 @@ export function createClient(deps: Deps): Client {
   const region = () => deps.region().toUpperCase();
 
   return {
+    forgetFailures() {
+      for (const k of Object.keys(failed)) delete failed[k];
+    },
+
     list(kind, list, page) {
       const r = region();
       const req = listReq(list, kind, page, r);

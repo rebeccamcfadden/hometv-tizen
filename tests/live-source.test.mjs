@@ -29,6 +29,7 @@ function fake(answers = {}) {
       person: ask('person', fail('error')),
       genre: ask('genre', ok([])),
       search: ask('search', ok({ titles: [], people: [], extra: [] })),
+      forgetFailures: ask('forgetFailures', undefined),
     },
   };
 }

@@ -293,6 +293,18 @@ test('offline, the last answer shows as stale and nothing is asked', async () =>
   assert.deepEqual(await a.client.details('movie:1'), { value: null, status: 'offline' });
 });
 
+test('forgetFailures lets a failed address be asked again at once', async () => {
+  const a = rig({ '/movie/603': MOVIE });
+  a.state.body = 'not json';
+  assert.equal((await a.client.details('movie:603')).status, 'error');
+  assert.equal((await a.client.details('movie:603')).status, 'error');
+  assert.equal(a.log.length, 1);
+  a.client.forgetFailures();
+  a.state.body = null;
+  assert.equal((await a.client.details('movie:603')).status, 'ok');
+  assert.equal(a.log.length, 2);
+});
+
 test('a failed request gives the stale answer, and is not retried for a minute', async () => {
   const a = rig({ '/movie/603': MOVIE });
   await a.client.details('movie:603');
