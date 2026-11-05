@@ -5,7 +5,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { loadTs } from './ts-module.mjs';
 
-const { i, pf, o, s, ls, f } = await loadTs({
+const { i, pf, o, s, ls, f, rr } = await loadTs({
+  rr: 'screens/rentRules.ts',
   i: 'live/installed.ts',
   pf: 'live/prefetch.ts',
   o: 'data/offers.ts',
@@ -48,6 +49,16 @@ test('prices are written in the region\'s money', () => {
   assert.equal(o.kr(4), '$4.00');
   assert.equal(s.currency(), '$');
   ls.prefs.set({ region: 'se' });
+});
+
+test('the 4K note is in the region\'s money, without float noise', () => {
+  const store = { service: 'appletv', rent: { service: 'appletv', type: 'rent', prices: { HD: 2.99, '4K': 4.99 } } };
+  ls.prefs.set({ region: 'us' });
+  assert.equal(rr.fourKNote(store), '4K costs $2.00 more here');
+  store.buy = { service: 'appletv', type: 'buy', prices: { HD: 9.99, '4K': 14.99 } };
+  assert.equal(rr.fourKNote(store), '4K costs $2.00–$5.00 more here');
+  ls.prefs.set({ region: 'se' });
+  assert.equal(rr.fourKNote({ rent: { service: 'appletv', type: 'rent', prices: { HD: 39, '4K': 49 } } }), '4K costs 10 kr more here');
 });
 
 test('the credit names the sources whose prices a live title shows', () => {
@@ -129,4 +140,7 @@ test('a list is loaded only up to the cap', () => {
   p.ask(ids);
   assert.deepEqual(n.started, ['a', 'b', 'c']);
   assert.equal(p.waiting(ids), 3);
+  ['a', 'b', 'c'].forEach((id) => n.finish(id));
+  p.ask(ids);
+  assert.deepEqual(n.started, ['a', 'b', 'c'], 'a redraw asking again doesn\'t reach the next titles');
 });
