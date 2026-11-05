@@ -7,7 +7,7 @@
 // No token is logged or put in anything a screen shows: `state()` holds the phase, the approve link (its request token
 // is the one the person must scan), the account name and counts. Only v1 builds import this (v1.ts).
 
-import { type Call, type Reply, SYNC_LISTS, type SyncList, APPROVE_SHORT } from './api';
+import { type Call, type Reply, type SyncList, APPROVE_SHORT } from './api';
 import { SignInFlow, type Phase } from './flow';
 import { LEDGER_KEY, SyncLedger, prepare } from './ledger';
 import { type Problem } from './parse';
@@ -76,6 +76,8 @@ export function createAccounts(d: Deps) {
   let lastFull = 0;
   let pushTimer = 0;
   let lastSync = '';
+  /** The changes made on the TV while a sync runs, in order. */
+  let during: { list: SyncList; id: string; present: boolean }[] = [];
 
   function read(k: string): string | null {
     try {
@@ -171,6 +173,7 @@ export function createAccounts(d: Deps) {
 
   async function runSync(s: Session, pull: boolean) {
     syncing = true;
+    during = [];
     emit();
     const started = d.now();
     try {
@@ -183,16 +186,13 @@ export function createAccounts(d: Deps) {
       if (flow.session() !== s) return;
       if (pull) lastFull = started;
       const lists = result.lists;
-      // Changes made on the TV while the sync ran win over what it read.
-      for (const list of SYNC_LISTS) {
-        const out = lists[list];
+      // Changes made on the TV while the sync ran win over what it read, even those this sync already sent.
+      for (const c of during) {
+        const out = lists[c.list];
         if (!out) continue;
-        for (const op of ledger.pending(list)) {
-          if (op.at < started) continue;
-          const i = out.indexOf(op.id);
-          if (op.present && i < 0) out.push(op.id);
-          if (!op.present && i >= 0) out.splice(i, 1);
-        }
+        const i = out.indexOf(c.id);
+        if (c.present && i < 0) out.push(c.id);
+        if (!c.present && i >= 0) out.splice(i, 1);
       }
       if (Object.keys(lists).length) d.lists.applySynced(lists);
       if (result.signedOut) {
@@ -220,6 +220,7 @@ export function createAccounts(d: Deps) {
   }
 
   const offChange = d.lists.onChange((list, id, present) => {
+    if (syncing) during.push({ list, id, present });
     if (!ledger.account()) return;
     ledger.record(list, id, present, d.now());
     saveLedger();

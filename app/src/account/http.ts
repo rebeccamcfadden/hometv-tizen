@@ -11,9 +11,11 @@ const MAX_CHARS = 512 * 1024;
 export function sendXhr(c: Call, bearer: string, timeoutMs = TIMEOUT): Promise<Reply | null> {
   return new Promise((resolve) => {
     let done = false;
+    let guard = 0;
     const end = (v: Reply | null) => {
       if (done) return;
       done = true;
+      window.clearTimeout(guard);
       resolve(v);
     };
     try {
@@ -26,8 +28,15 @@ export function sendXhr(c: Call, bearer: string, timeoutMs = TIMEOUT): Promise<R
       xhr.onload = () => end(xhr.status === 0 || xhr.responseText.length > MAX_CHARS ? null : { status: xhr.status, body: xhr.responseText });
       xhr.onerror = xhr.ontimeout = xhr.onabort = () => end(null);
       xhr.send(c.body);
-      // Some engines skip ontimeout on a dead network: give up a little after it anyway.
-      window.setTimeout(() => end(null), timeoutMs + 2000);
+      // Some engines skip ontimeout on a dead network: give up a little after it anyway, and don't leave the timer behind.
+      guard = window.setTimeout(() => {
+        end(null);
+        try {
+          xhr.abort();
+        } catch (e) {
+          // Already finished.
+        }
+      }, timeoutMs + 2000);
     } catch (e) {
       end(null);
     }

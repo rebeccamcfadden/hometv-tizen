@@ -208,3 +208,36 @@ test('driver: TMDB revoking the session signs the TV out and keeps the lists', a
   assert.deepEqual(lists.sets.myList, ['movie:1']);
   t.a.stop();
 });
+
+test('driver: a title added while a sync is running stays on the TV, even when the same sync sends it', async () => {
+  const lists = fakeLists({ myList: ['movie:1'] });
+  const kv = memoryKv();
+  kv.setItem(m.session.SESSION_KEY, JSON.stringify(SESSION));
+  const clock = fakeClock();
+  const tmdb = fakeTmdb({ watchlist: { movie: [10], tv: [] } });
+  let release = null;
+  const gate = new Promise((r) => (release = r));
+  const a = m.account.createAccounts({
+    now: clock.now,
+    setTimer: clock.setTimer,
+    clearTimer: clock.clearTimer,
+    send: async (c, bearer) => {
+      if (c.url.includes('/movie/favorites')) await gate;
+      return tmdb.answer(c, bearer);
+    },
+    appKey: () => Promise.resolve(FAKE.appKey),
+    kv,
+    lists,
+    visible: () => true,
+  });
+  a.shown();
+  await clock.advance(100);
+  assert.equal(a.state().syncing, true, 'held at the favourites read');
+  lists.toggle('myList', 'movie:50');
+  release();
+  await clock.advance(100);
+  assert.equal(a.state().syncing, false);
+  assert.deepEqual(tmdb.watchlist.movie.slice().sort((x, y) => x - y), [1, 10, 50], 'the same sync sent it');
+  assert.deepEqual(lists.sets.myList.slice().sort(), ['movie:1', 'movie:10', 'movie:50']);
+  a.stop();
+});
