@@ -131,6 +131,46 @@ const registered: Record<string, boolean> = {};
 const PAGES_SERVICE_ID = 'HmTvSpike0.HomeTVPages';
 /** The service's TOKEN_FILE, in the app's private folder (service/pages.js). */
 const TOKEN_FILE = 'wgt-private/hometv-pages-tv-token';
+/** The service's key store (service/pages.js STORE_FILE), in the same private folder. */
+const KEYS_FILE = 'wgt-private/hometv-keys-v1.json';
+
+/** A text file in the app's private folder; on a PC, the dev server's route instead. "" when it can't be read. */
+function readPrivate(file: string, devRoute: string, trim = true): Promise<string> {
+  const t = tz();
+  const fsys = t && t.filesystem;
+  const out = (s: string) => (trim ? s.trim() : s);
+  if (!fsys) {
+    return new Promise((resolve) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', devRoute);
+      xhr.timeout = 1500;
+      xhr.onload = () => resolve(xhr.status === 200 ? out(xhr.responseText) : '');
+      xhr.onerror = xhr.ontimeout = () => resolve('');
+      xhr.send();
+    });
+  }
+  if (fsys.openFile) {
+    try {
+      const f = fsys.openFile(file, 'r');
+      try {
+        return Promise.resolve(out(f.readString()));
+      } finally {
+        f.close();
+      }
+    } catch (e) {
+      // Not there yet, or this TV only has the older calls below.
+    }
+  }
+  return new Promise((resolve) => {
+    if (!fsys.resolve) return resolve('');
+    try {
+      fsys.resolve(file, (f) => f.readAsText((text) => resolve(out(String(text || ''))), () => resolve(''), 'UTF-8'), () => resolve(''), 'r');
+    } catch (e) {
+      resolve('');
+    }
+    setTimeout(() => resolve(''), 2000);
+  });
+}
 
 /** How the TV is connected: Wi-Fi, a cable, not at all, or it won't say (a PC, TizenBrew's page). */
 export type NetKind = 'wifi' | 'ethernet' | 'none' | 'unknown';
@@ -554,39 +594,24 @@ export const platform = {
      * from the dev server, which has it from the service it started. "" when it can't be read.
      */
     token(): Promise<string> {
-      const t = tz();
-      const fsys = t && t.filesystem;
-      if (!fsys) {
-        return new Promise((resolve) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', '/__hometv/pages-token');
-          xhr.timeout = 1500;
-          xhr.onload = () => resolve(xhr.status === 200 ? xhr.responseText.trim() : '');
-          xhr.onerror = xhr.ontimeout = () => resolve('');
-          xhr.send();
-        });
+      return readPrivate(TOKEN_FILE, '/__hometv/pages-token');
+    },
+    /**
+     * The TMDB token the household sent through the key page, read from the same private folder (on a PC from the dev
+     * server). "" when none is saved or it can't be read. Read-only: the screens of the live catalogue (app/src/live/)
+     * send it to TMDB and nowhere else.
+     */
+    async tmdbKey(): Promise<string> {
+      const text = await readPrivate(KEYS_FILE, '/__hometv/tmdb-key', false);
+      if (!text) return '';
+      try {
+        const keys = JSON.parse(text);
+        const entry = keys && keys.keys ? keys.keys.tmdb : keys;
+        return entry && typeof entry.key === 'string' ? entry.key.trim() : '';
+      } catch (e) {
+        // The dev server answers with the bare token.
+        return /^[A-Za-z0-9._-]+$/.test(text.trim()) ? text.trim() : '';
       }
-      if (fsys.openFile) {
-        try {
-          const file = fsys.openFile(TOKEN_FILE, 'r');
-          try {
-            return Promise.resolve(file.readString().trim());
-          } finally {
-            file.close();
-          }
-        } catch (e) {
-          // Not there yet, or this TV only has the older calls below.
-        }
-      }
-      return new Promise((resolve) => {
-        if (!fsys.resolve) return resolve('');
-        try {
-          fsys.resolve(TOKEN_FILE, (f) => f.readAsText((text) => resolve(String(text || '').trim()), () => resolve(''), 'UTF-8'), () => resolve(''), 'r');
-        } catch (e) {
-          resolve('');
-        }
-        setTimeout(() => resolve(''), 2000);
-      });
     },
     /** The TV's own address on the home network, when the service can't list its own. "" when unknown. */
     address(): Promise<string> {

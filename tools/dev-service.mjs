@@ -71,9 +71,38 @@ export async function startDevPages({ port = 8767, dataDir = path.join(root, '.d
     checks,
     instance,
     pages,
+    dataDir,
     close() {
       instance.stop();
       checks.server.close();
+    },
+  };
+}
+
+/**
+ * The dev page's way to the TMDB token the key page saved (on the TV the app reads its private folder): GET
+ * /__hometv/tmdb-key on the dev server, the token alone as text, "" when none. Same guard as the pages token.
+ */
+export function tmdbKeyPlugin(pages) {
+  return {
+    name: 'hometv-tmdb-key',
+    configureServer(server) {
+      server.middlewares.use('/__hometv/tmdb-key', (req, res) => {
+        if (!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(String(req.headers.host || ''))) {
+          res.statusCode = 403;
+          return res.end();
+        }
+        let key = '';
+        try {
+          const saved = JSON.parse(fs.readFileSync(path.join(pages.dataDir, 'hometv-keys-v1.json'), 'utf8'));
+          key = String((saved.keys && saved.keys.tmdb && saved.keys.tmdb.key) || '');
+        } catch (e) {
+          // No key saved yet.
+        }
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(key);
+      });
     },
   };
 }
