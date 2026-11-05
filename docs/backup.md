@@ -23,14 +23,14 @@ A read that failed or came back empty is marked "not captured". It is never kept
 ## On the TV: Restore previous settings
 
 HomeTV keeps a copy of its own settings from before the last change. Its settings are the region, the weather place,
-units, motion, the screensaver, Home's row of apps, the TV Utilities order, and whether first run is done (code:
+units, motion, the screensaver, Home's row of apps, the TV Utilities order (not whether first run is done, so a restore never brings first run back; code:
 `app/src/settingsBackup.ts`).
 
 - A **change** is one visit to Settings, or to first run. What was there when the screen opened is kept when it
   closes, but only if something changed. A visit that changes nothing doesn't replace the copy.
 - **Settings › First run › Restore previous settings** puts that copy back, and says when it was taken.
 - Restore keeps the settings it replaced, so pressing it again undoes the restore.
-- A copy taken before first run puts first run back.
+- A copy taken before first run empties the settings; first run itself doesn't come back.
 - If the TV's storage can't be read, no copy is kept and Restore changes nothing.
 
 There is one copy, not a history, kept in the page's storage (`hometv-settings-previous`). It never leaves the TV.

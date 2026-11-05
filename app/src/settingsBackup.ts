@@ -2,7 +2,7 @@
 // can undo it (docs/backup.md). A change set is one visit to Settings or to first run: what the page's storage held
 // when the screen opened is kept under `hometv-settings-previous` when the screen closes, if anything changed. Restore
 // puts those values back and keeps the ones it replaced, so a second Restore undoes the first. Only HomeTV's own keys
-// (the settings, first run's flag, Home's row, the TV Utilities moves); Samsung's settings are out of a web app's reach.
+// (the settings, Home's row, the TV Utilities moves; not first run's flag, so a restore never brings first run back); Samsung's settings are out of a web app's reach.
 // Pure apart from the storage passed in, so tests run it in Node.
 
 import { HOME_ROW_KEY, type KeyValueStore } from './homeRow';
@@ -10,8 +10,8 @@ import { UTILITY_MOVES_KEY } from './tvUtilities';
 
 export const PREVIOUS_KEY = 'hometv-settings-previous';
 export const SNAPSHOT_SCHEMA = 'hometv-settings-1';
-/** The keys a snapshot holds: launcherSettings.ts's SETTINGS_KEY and SETUP_KEY, Home's row, the utility moves. */
-export const BACKED_UP_KEYS = ['hometv-settings-v1', 'hometv-setup-done', HOME_ROW_KEY, UTILITY_MOVES_KEY];
+/** The keys a snapshot holds: launcherSettings.ts's SETTINGS_KEY, Home's row, the utility moves. */
+export const BACKED_UP_KEYS = ['hometv-settings-v1', HOME_ROW_KEY, UTILITY_MOVES_KEY];
 
 export type SnapshotWhy = 'settings' | 'setup' | 'restore';
 

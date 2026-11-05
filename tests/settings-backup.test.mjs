@@ -56,16 +56,18 @@ test('restore round-trips the settings, and a second restore undoes it', () => {
   assert.equal(b.readPrevious(s).why, 'restore');
 });
 
-test('before first run: restore takes HomeTV back to its first start', () => {
+test('before first run: restore empties the settings but first run stays done, and a second restore undoes it', () => {
   const s = memory();
   const setup = b.changeSet(s, 'setup', () => 1);
   ls.createPrefs(s).set({ region: 'us' });
   ls.markSetupDone(s);
   assert.equal(setup.end(), true);
   assert.equal(b.restorePrevious(s, 2), true);
-  assert.equal(ls.setupDone(s), false, 'first run shows again');
+  assert.equal(ls.setupDone(s), true, 'first run does not come back');
   assert.equal(ls.loadPrefs(s).region, null);
   for (const k of b.BACKED_UP_KEYS) assert.equal(s.map.has(k), false, k);
+  assert.equal(b.restorePrevious(s, 3), true);
+  assert.equal(ls.loadPrefs(s).region, 'us');
 });
 
 test('an unreadable storage or snapshot is never a baseline, and restore then changes nothing', () => {
@@ -100,6 +102,7 @@ test('a failed write puts the settings back as they were', () => {
 test('only HomeTV’s own keys are kept', () => {
   const s = memory(Object.assign({ 'hometv-error-log': 'x', other: 'y' }, FIRST));
   const snap = b.exportSettings(s, 1, 'settings');
-  assert.deepEqual(Object.keys(snap.values).sort(), ['hometv-home-row', 'hometv-settings-v1', 'hometv-setup-done', 'hometv-utility-moves']);
-  assert.deepEqual(b.BACKED_UP_KEYS.slice(0, 2), [ls.SETTINGS_KEY, ls.SETUP_KEY]);
+  assert.deepEqual(Object.keys(snap.values).sort(), ['hometv-home-row', 'hometv-settings-v1', 'hometv-utility-moves']);
+  assert.deepEqual(b.BACKED_UP_KEYS.slice(0, 1), [ls.SETTINGS_KEY]);
+  assert.ok(!b.BACKED_UP_KEYS.includes(ls.SETUP_KEY), 'a restore never brings first run back');
 });
