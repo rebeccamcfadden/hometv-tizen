@@ -41,6 +41,10 @@ if (!fs.existsSync(path.join(root, 'dist', 'index.html'))) throw new Error('Run 
 if (sampleIn(fs.readFileSync(path.join(root, 'dist', 'assets', 'app.js'), 'utf8')) && process.argv.indexOf('--allow-sample') < 0) {
   throw new Error('dist/ has the sample catalogue. Rebuild without it, or pass --allow-sample for the emulator only.');
 }
+// The check app's page (HOMETV_CHECK=1) is packaged by tools/check/package-check.mjs, never as HomeTV.
+if (/HomeTVCheck/.test(fs.readFileSync(path.join(root, 'dist', 'assets', 'app.js'), 'utf8'))) {
+  throw new Error('dist/ is the check app (a HOMETV_CHECK=1 build). Run `npm run build` first.');
+}
 fs.cpSync(path.join(root, 'dist'), path.join(build, 'dist'), { recursive: true });
 for (const f of fs.readdirSync(path.join(aero, 'service'))) {
   if (f.endsWith('.js')) {

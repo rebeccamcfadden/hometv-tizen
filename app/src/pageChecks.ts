@@ -140,8 +140,39 @@ function dialYouTube(meta: string): Promise<{ status: number; error?: string }> 
   });
 }
 
+/** The app's background services on the TV's own address: AeroTizen's watcher, and the key page's service. */
+export const SERVICE_PORTS: Record<string, { port: number; path: string }> = {
+  watcher: { port: 47791, path: '/state' },
+  pages: { port: 8766, path: '/ping' },
+};
+
+/** One GET to a background service on 127.0.0.1; the HTTP status, or 0 when nothing answered. */
+function askService(port: number, path: string, timeoutMs: number): Promise<number> {
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+    try {
+      xhr.open('GET', `http://127.0.0.1:${port}${path}`);
+    } catch (e) {
+      resolve(0);
+      return;
+    }
+    xhr.timeout = timeoutMs;
+    xhr.onload = () => resolve(xhr.status);
+    xhr.onerror = xhr.ontimeout = () => resolve(0);
+    xhr.send();
+  });
+}
+
 export const pageChecks = {
   results: load,
+
+  /** Whether a background service answers on its port (check mode asks again until it does, or gives up). */
+  async service(which: string): Promise<{ answers: boolean; status: number }> {
+    const s = SERVICE_PORTS[which];
+    if (!s || !tz()) return { answers: false, status: 0 };
+    const status = await askService(s.port, s.path, 3000);
+    return { answers: status >= 200 && status < 300, status };
+  },
 
   /** `appIdFor` gives the installed app's id for a Home key (AeroTizen's inventory), or null. */
   async run(name: string, params: Record<string, unknown>, appIdFor: (key: string) => string | null): Promise<Result> {

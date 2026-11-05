@@ -1,0 +1,33 @@
+# The instructions pages (site/), on GitHub Pages: site/check/ is https://rebeccamcfadden.github.io/hometv-tizen/check/.
+# Runs only when site/ changes on main. Pages must be switched on in the repo's settings (Source: GitHub Actions)
+# before the first deploy; this workflow doesn't switch it on.
+name: pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['site/**']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

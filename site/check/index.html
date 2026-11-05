@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>HomeTV check for Samsung TVs</title>
+<style>
+  :root { --ink: #1d2433; --soft: #5a6478; --line: #d9dee8; --bg: #f6f7fa; --accent: #2457c5; --warn: #fff4d6; --warn-line: #e3b341; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
+  main { max-width: 820px; margin: 0 auto; padding: 24px 20px 64px; background: #fff; min-height: 100vh; }
+  h1 { font-size: 30px; line-height: 1.2; margin: 8px 0 12px; }
+  h2 { font-size: 23px; margin: 40px 0 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+  h3 { font-size: 19px; margin: 26px 0 6px; }
+  p, li { max-width: 72ch; }
+  .warn { background: var(--warn); border: 2px solid var(--warn-line); border-radius: 10px; padding: 12px 16px; font-weight: 600; }
+  .note { background: #eef3ff; border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 6px; }
+  ol.steps > li { margin-bottom: 18px; }
+  ol.steps > li > strong:first-child { display: block; font-size: 18px; }
+  .cmd { position: relative; margin: 10px 0 14px; }
+  .cmd pre { margin: 0; padding: 14px 16px; padding-right: 96px; background: #10151f; color: #e8edf7; border-radius: 8px;
+    font: 14px/1.45 Consolas, "Cascadia Mono", monospace; white-space: pre-wrap; word-break: break-all; }
+  .cmd button { position: absolute; top: 8px; right: 8px; font: 600 15px "Segoe UI", Arial, sans-serif; padding: 6px 14px;
+    border: 0; border-radius: 6px; background: #ffffff; color: #10151f; cursor: pointer; }
+  .cmd button.done { background: #b9f0c8; }
+  kbd { font: 14px Consolas, monospace; background: #eef0f5; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; }
+  code { font: 15px Consolas, "Cascadia Mono", monospace; background: #eef0f5; padding: 1px 4px; border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); padding: 7px 8px; }
+  td code { word-break: break-all; }
+  .small { color: var(--soft); font-size: 15px; }
+  .tv { background: #10151f; color: #e8edf7; border-radius: 4px; padding: 1px 6px; }
+  .tv strong { color: #ffd27f; }
+  footer { margin-top: 48px; color: var(--soft); font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+
+<p class="warn">⚠ Work in progress, not tested on a real TV yet.</p>
+
+<h1>HomeTV check for Samsung TVs</h1>
+
+<p>HomeTV is a simple home screen for TVs. Before it goes on a Samsung TV, this check finds out, once, whether it will
+install and work on that TV. You run it on a Windows laptop, usually during a phone call with the person who sent you
+this link. It takes <strong>about 40 minutes</strong>.</p>
+
+<h2>What the check does, and doesn't do</h2>
+<ul>
+  <li>It <strong>looks</strong> at the TV: its model, its software version, which of the usual streaming apps are on it,
+    and whether the remote's buttons reach an app.</li>
+  <li>It <strong>installs one small app, “HomeTV Check”</strong>, on the TV, runs it while you follow its screen, then
+    <strong>removes it again</strong>, with its settings. Nothing is kept on the TV.</li>
+  <li>It <strong>doesn't change</strong> any of the TV's settings, apps or accounts, and doesn't install anything on the
+    laptop: it runs from one folder you can delete afterwards.</li>
+  <li>To let the laptop in, you switch on the TV's <strong>Developer Mode</strong> (Samsung's own switch for app makers).
+    At the end you switch it off again.</li>
+  <li>To install an app, Samsung needs a certificate for that one TV. The tool makes it after you
+    <strong>sign in to your Samsung account</strong> in the laptop's web browser. The tool never sees your password:
+    you type it into Samsung's own page.</li>
+  <li>At the end it writes a <strong>report</strong> on the laptop's Desktop for you to send back.
+    <a href="#report">What's in the report</a>.</li>
+</ul>
+
+<h2>What you need</h2>
+<ul>
+  <li>The <strong>Samsung TV</strong>, switched on, and its <strong>remote</strong>.</li>
+  <li>A <strong>Windows 10 or 11 laptop</strong> on the <strong>same home network</strong> as the TV (the same Wi-Fi,
+    or plugged into the same router). Plugged into power is best.</li>
+  <li>A <strong>Samsung account</strong> (the one you use on the TV or a Samsung phone is fine). No account? You can make a
+    free one when the sign-in page opens.</li>
+  <li><strong>About 40 minutes.</strong> The download is about 16 MB.</li>
+  <li>Optional: a <strong>phone</strong> on the same Wi-Fi, for one short check.</li>
+</ul>
+
+<h2>The steps</h2>
+<ol class="steps">
+  <li>
+    <strong>Open PowerShell on the laptop.</strong>
+    Press the <kbd>Windows</kbd> key, type <code>PowerShell</code>, and press <kbd>Enter</kbd>. A window with a dark
+    background and a blinking cursor opens.
+  </li>
+  <li>
+    <strong>Copy this command, paste it into PowerShell, and press Enter.</strong>
+    Press <em>Copy</em>, then click into the PowerShell window and right-click (that pastes), then press <kbd>Enter</kbd>.
+    It downloads the tool, checks that it's exactly the right file, unpacks it into a folder of its own and starts it.
+    <div class="cmd"><pre id="cmd-run">$ProgressPreference='SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol='Tls12'; $z="$env:TEMP\HomeTV-Check-Windows.zip"; Invoke-WebRequest -UseBasicParsing 'https://github.com/rebeccamcfadden/hometv-tizen/releases/download/check-samsung-v1/HomeTV-Check-Windows.zip' -OutFile $z; if ((Get-FileHash $z -Algorithm SHA256).Hash -ne '<!--sha:zip-->6d5d26924c378f566db5c7c0ee782fc0ec746b744ae0b280807ffceb121ce20f<!--/sha:zip-->') { Write-Host 'This is not the expected file. Stop here and tell the person who sent you the link.' -ForegroundColor Red } else { Expand-Archive $z $env:LOCALAPPDATA -Force; &amp; "$env:LOCALAPPDATA\HomeTV-Check\python\python.exe" "$env:LOCALAPPDATA\HomeTV-Check\app\hometv_check.py" }</pre><button type="button" data-copy="cmd-run">Copy</button></div>
+    <p class="small">If you'd rather not paste a command: download <code>HomeTV-Check-Windows.zip</code> from the
+      <a href="https://github.com/rebeccamcfadden/hometv-tizen/releases/tag/check-samsung-v1">release page</a>, open your
+      Downloads folder, right-click the file, choose <em>Extract All…</em>, then <em>Extract</em>. In the folder that
+      opens, double-click <code>HomeTV-Check</code>, then <strong>Start HomeTV Check.cmd</strong>. If Windows shows a blue
+      box saying “Windows protected your PC”, choose <strong>More info</strong>, then <strong>Run anyway</strong>.</p>
+  </li>
+  <li>
+    <strong>The laptop looks for the TV.</strong> The window shows each step in plain words; read it as you go. When it
+    asks, press <kbd>Enter</kbd> in that window.
+  </li>
+  <li>
+    <strong>Switch on the TV's Developer Mode.</strong> The tool shows the laptop's address (four numbers with dots).
+    On the TV:
+    <ol>
+      <li>Open <strong>Apps</strong> (press Home, then choose Apps).</li>
+      <li>On the remote, press <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd>. No number buttons? Press
+        the <kbd>123</kbd> button (or a colour button) to get numbers on the screen. A <strong>Developer mode</strong>
+        box appears. (Nothing appears? Close Apps, open it again, and type the numbers slowly.)</li>
+      <li>Switch it <strong>On</strong>. Under <strong>Host PC IP</strong>, type the laptop's address the tool shows.
+        Press <strong>OK</strong>.</li>
+      <li><strong>Restart the TV fully:</strong> hold the remote's power button until the Samsung logo shows (about 5
+        seconds). A short press only puts it to sleep, and Developer Mode needs a real restart.</li>
+    </ol>
+    When the TV is back on, press <kbd>Enter</kbd> in the tool's window.
+  </li>
+  <li>
+    <strong>Sign in to Samsung.</strong> The tool opens Samsung's sign-in page in your web browser. Sign in (or make a
+    free account there). When the page says <em>“Signed in. You can close this tab.”</em>, go back to the tool's window.
+    The tool then installs “HomeTV Check” and starts it on the TV.
+  </li>
+  <li>
+    <strong>Follow the TV's screen.</strong> Use the TV's remote: the arrows and OK to choose. It takes about 20
+    minutes. <a href="#tv">What the TV will show</a>. If the TV ever shows something else, open
+    <strong>HomeTV Check</strong> from Apps and it carries on where it was.
+  </li>
+  <li>
+    <strong>When the TV says “All done”, look at the laptop.</strong> It reads the results from the TV by itself,
+    removes the check app, and writes the report. If it asks for a photo, take one of the TV's screen with your phone.
+  </li>
+  <li>
+    <strong>Send the report file to the person who sent you this link.</strong> Attach it to an email or a
+    message. It's on the Desktop: <code>HomeTV-check-report-</code> and the date, ending in <code>.txt</code> (a second
+    one, ending in <code>.json</code>, is the same for a computer: send it too).
+  </li>
+  <li>
+    <strong>Keep the TV's 3 certificate files.</strong> At the end, the tool opens the folder they're in:
+    <code>author.p12</code>, <code>distributor.p12</code> and <code>password.txt</code>. HomeTV's later updates must be
+    signed with the same certificate, so keep them: copy them to a USB stick, or send them to the person who sent you
+    this link. <strong>Treat them like a password:</strong> don't post them anywhere or give them to anyone else.
+  </li>
+  <li>
+    <strong>Switch Developer Mode off.</strong> On the TV: Apps, press <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>
+    <kbd>4</kbd> <kbd>5</kbd>, switch Developer mode <strong>Off</strong>, OK, then restart the TV fully (hold power).
+    While it's on, its <strong>Host PC IP</strong> setting is what lets the laptop at that address into the TV.
+    <br>If the TV asked you to <strong>allow “HomeTV”</strong> during the check, remove it too: Settings › General ›
+    External Device Manager › Device Connection Manager › Device List › HomeTV › Delete.
+    <br>You can delete the tool's folder: in PowerShell, paste this and press Enter.
+    <div class="cmd"><pre id="cmd-clean">Remove-Item -Recurse -Force "$env:LOCALAPPDATA\HomeTV-Check", "$env:TEMP\HomeTV-Check-Windows.zip"</pre><button type="button" data-copy="cmd-clean">Copy</button></div>
+  </li>
+</ol>
+
+<h2 id="tv">What the TV will show</h2>
+<ul>
+  <li><strong>The Developer mode box</strong> (step 4), and the Samsung logo when it restarts.</li>
+  <li><strong>“HomeTV Check”</strong>: a dark screen with the steps on the left. It goes through them in order:
+    <ol>
+      <li><span class="tv"><strong>Checking this TV</strong></span> by itself, up to a minute. Don't press anything.</li>
+      <li><span class="tv"><strong>Press the RED button</strong></span>, then green, yellow, blue, INFO and the number 5.
+        If nothing happens when you press one, choose “Nothing happens when I press it”.</li>
+      <li><span class="tv"><strong>Can a phone reach the TV?</strong></span> Optional: point a phone's camera at the square
+        code on the TV, or type the address shown into the phone's browser, and say whether a page called “Keys for
+        your TV” opens. Don't type anything into it. No phone? Choose “I don't have a phone to hand”.</li>
+      <li><span class="tv"><strong>Open YouTube and come back</strong></span>: it opens YouTube; press the remote's Back
+        button until you're back, then say how you got back.</li>
+      <li><span class="tv"><strong>The Home button</strong></span>: it opens an app; press the Home button (the house)
+        once and wait 20 seconds. The check app should come back by itself; if not, open it from Apps.</li>
+      <li><span class="tv"><strong>Opening a film or video</strong></span>: it asks YouTube, Netflix and Prime Video
+        (those that are on the TV) to open one title straight away, and asks what opened. The TV may ask whether to
+        <strong>allow “HomeTV”</strong>: choose Allow (step 10 above removes it again). Nothing is played for long and
+        nothing is bought.</li>
+      <li><span class="tv"><strong>All done</strong></span>, with the results in short lines and a square code.</li>
+    </ol>
+  </li>
+</ul>
+
+<h2 id="report">What's in the report</h2>
+<p>Only these, and nothing else (the tool drops anything not on this list, on the TV and again on the laptop):</p>
+<ul>
+  <li><strong>The TV:</strong> its model code (like UE43TU7000) and board name, the year it's from, its Tizen version,
+    its web engine's version, its screen size in pixels.</li>
+  <li><strong>The laptop:</strong> the Windows version, the tool's, Python's and AeroTizen's versions, the date and how
+    many minutes the check took.</li>
+  <li><strong>How it went:</strong> whether the laptop found the TV, whether Developer Mode was on and pointed at this
+    laptop (yes or no, not the address), whether the certificate was made, whether the check app installed, started and
+    was removed again.</li>
+  <li><strong>Apps:</strong> how many apps the TV has, and for each of these whether it's there (yes or no): Netflix,
+    YouTube, Prime Video, Disney+, HBO Max, Apple TV, Hulu, Peacock, Paramount+, Spotify, Plex, Tubi, Pluto TV. Not the
+    list of your apps.</li>
+  <li><strong>The check app's results:</strong> how long it took to start; whether HomeTV's two background helpers
+    answered, and after how long; each remote button (received or not); the phone (yes, no, no phone); opening
+    YouTube and coming back, and the Home button (what happened and how many seconds); for each title tried, whether
+    the app took it, a short error name if not, and your answer (the title, only the app, nothing).</li>
+</ul>
+<p>Never in it: the TV's name, serial number or device id, any address (IP or MAC), the Wi-Fi's name, your Samsung
+  account or email, the certificate, or the list of your apps. Open the <code>.txt</code> file in Notepad to see it
+  before you send it.</p>
+
+<h2>If something goes wrong</h2>
+<ul>
+  <li><strong>“This is not the expected file”</strong>: stop, and tell the person who sent you the link.</li>
+  <li><strong>The tool doesn't find the TV</strong>: the TV must be on (not asleep), and the laptop on the same Wi-Fi.
+    The tool lets you type the TV's address: TV Settings › General › Network › Network Status › IP Settings.</li>
+  <li><strong>“The TV didn't let the laptop in”</strong>: Host PC IP must be exactly the address the tool shows, and the
+    TV must be restarted fully (hold power) after it's set.</li>
+  <li><strong>The sign-in page doesn't open</strong>: the tool shows its address; copy it into your browser.</li>
+  <li><strong>Stopped half-way?</strong> Run the command again. It doesn't ask you to sign in twice.
+    If “HomeTV Check” is left on the TV: Home › Apps › the gear (Settings) › HomeTV Check › Delete.</li>
+</ul>
+
+<h2>The files</h2>
+<p>From the <a href="https://github.com/rebeccamcfadden/hometv-tizen/releases/tag/check-samsung-v1">release
+  <code>check-samsung-v1</code></a>. The command above checks the first one's SHA-256 by itself.</p>
+<table>
+  <tr><th>File</th><th>What it is</th><th>SHA-256</th></tr>
+  <tr><td><code>HomeTV-Check-Windows.zip</code></td><td>The tool: Python (python.org's own build), AeroTizen's tool, the
+    check, and the check app</td><td><code><!--sha:zip-->6d5d26924c378f566db5c7c0ee782fc0ec746b744ae0b280807ffceb121ce20f<!--/sha:zip--></code></td></tr>
+  <tr><td><code>HomeTV-Check-App.wgt</code></td><td>The check app on its own, unsigned (the tool signs it for your
+    TV)</td><td><code><!--sha:wgt-->a2a0d50c3c82c5452b3cc6d678dba74b3e69196fe463e20f96976cde72e10b94<!--/sha:wgt--></code></td></tr>
+  <tr><td><code>SHA256SUMS.txt</code></td><td>Both SHA-256s</td><td></td></tr>
+</table>
+
+<footer>
+  HomeTV for Samsung is built on <a href="https://github.com/helalaou/AeroTizen">AeroTizen</a> by Hamza El Alaoui (MIT):
+  its tool installs the check app and makes the certificate. Source:
+  <a href="https://github.com/rebeccamcfadden/hometv-tizen">hometv-tizen</a> (<code>tools/check/</code>).
+</footer>
+
+</main>
+<script>
+  // The Copy buttons: the command's text to the clipboard (an older way when the newer one isn't allowed).
+  (function () {
+    function copy(text, done) {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done, function () { fallback(text, done); });
+      } else {
+        fallback(text, done);
+      }
+    }
+    function fallback(text, done) {
+      var area = document.createElement('textarea');
+      area.value = text;
+      area.setAttribute('readonly', '');
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy'); done(); } catch (e) { /* select the text by hand */ }
+      document.body.removeChild(area);
+    }
+    var buttons = document.querySelectorAll('button[data-copy]');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener('click', function () {
+        var button = this;
+        var text = document.getElementById(button.getAttribute('data-copy')).textContent;
+        copy(text, function () {
+          button.textContent = 'Copied';
+          button.className = 'done';
+          setTimeout(function () { button.textContent = 'Copy'; button.className = ''; }, 2500);
+        });
+      });
+    }
+  })();
+</script>
+</body>
+</html>
