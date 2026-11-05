@@ -1,0 +1,85 @@
+/* Settings › Privacy (screens/panes/privacy.ts). Chromium 56: flex and margins, no grid or gap. */
+.pv-where {
+  margin: -4px 0 14px 4px;
+  font-size: var(--t-small);
+  line-height: 1.4;
+  color: var(--text-3);
+}
+.pv-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding: 18px 22px;
+  border-radius: var(--radius-l);
+  border: var(--line-w) solid var(--line);
+  color: var(--text-2);
+}
+.pv-row.is-focused {
+  background: rgba(var(--tint-rgb), 0.12);
+  border-color: var(--accent);
+  color: var(--text-1);
+}
+.pv-box,
+.pv-count {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 20px;
+  border-radius: 10px;
+  border: 2px solid var(--line-strong);
+  font-size: 20px;
+  font-weight: 600;
+}
+.pv-row.is-done .pv-box {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.pv-row.is-leave .pv-title {
+  color: var(--warn, #f5b14c);
+}
+.pv-main {
+  flex: 1;
+  min-width: 0;
+}
+.pv-title {
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-1);
+}
+.pv-when,
+.pv-sub {
+  font-size: var(--t-small);
+  font-weight: 400;
+  color: var(--text-3);
+}
+.pv-line {
+  display: flex;
+  margin-top: 6px;
+  font-size: var(--t-small);
+  line-height: 1.4;
+}
+.pv-k {
+  flex: none;
+  width: 130px;
+  color: var(--text-3);
+}
+.pv-v {
+  flex: 1;
+  min-width: 0;
+}
+.pv-apps {
+  margin-top: 8px;
+  font-size: var(--t-small);
+  line-height: 1.4;
+}
+.pv-result {
+  margin-top: 18px;
+  font-size: 22px;
+  line-height: 1.5;
+  color: var(--text-1);
+}

@@ -1,5 +1,5 @@
 // Settings (design_preview's screens/settings.ts at 2bf3c2d, "Launcher settings"), slimmed for v0 on Samsung:
-// Performance (Motion), Screensaver, Home row apps, Weather, Region and About, and a way back into first run. Sections on the left with their values; the pane on
+// Performance (Motion), Screensaver, Home row apps, Weather, Region, Privacy (Samsung's switches as a checklist) and About, and a way back into first run. Sections on the left with their values; the pane on
 // the right shows the focused section at once. → or OK enters the pane (its border brightens), ← from its left edge
 // returns to the section. Back in the pane leaves a sub-state first (Change city, an app being moved), then the pane;
 // Back on the list closes the page. Changes save at once. Not in v0 (docs/versions.md): account, streaming services,
@@ -18,13 +18,14 @@ import { PAGE_VERSION } from '../version';
 import { aboutPane } from './panes/about';
 import { appsPane } from './panes/apps';
 import { performancePane, screensaverPane } from './panes/look';
+import { privacyPane, privacyValue } from './panes/privacy';
 import type { Pane, PaneHost } from './panes/pane';
 import { regionPane } from './panes/region';
 import { weatherPane } from './panes/weather';
 import { showSetup } from './setup';
 import { weather } from '../weather/homeWeather';
 
-export type SectionId = 'performance' | 'screensaver' | 'apps' | 'weather' | 'region' | 'setup' | 'about';
+export type SectionId = 'performance' | 'screensaver' | 'apps' | 'weather' | 'region' | 'privacy' | 'setup' | 'about';
 
 interface Section {
   id: SectionId;
@@ -41,6 +42,7 @@ const SECTIONS: Section[] = [
   { id: 'apps', label: 'Home row apps', icon: 'apps', value: () => String(homeRow.get().length) },
   { id: 'weather', label: 'Weather', icon: 'cloud', value: () => (prefs.get().place ? prefs.get().place!.name : 'Not set') },
   { id: 'region', label: 'Region', icon: 'pin', value: () => (prefs.get().region ? REGION_LABELS[prefs.get().region!] : 'Not set') },
+  { id: 'privacy', label: 'Privacy', icon: 'eye', value: privacyValue },
   { id: 'setup', label: 'First run', icon: 'home', value: () => '' },
   { id: 'about', label: 'About', icon: 'info', value: () => aboutValue(bridge.platform.pageUpdates(), PAGE_VERSION) },
 ];
@@ -48,7 +50,7 @@ const SECTIONS: Section[] = [
 /** design_preview's groups (F23), with the sections v0 has. */
 const GROUPS: { title: string; items: SectionId[] }[] = [
   { title: 'Home & look', items: ['performance', 'screensaver', 'apps', 'weather'] },
-  { title: 'This TV', items: ['region', 'setup', 'about'] },
+  { title: 'This TV', items: ['region', 'privacy', 'setup', 'about'] },
 ];
 
 /** First run again, from Settings: the same steps as on the first start. */
@@ -91,6 +93,7 @@ export function settingsScreen(initial: SectionId = 'apps'): Screen {
     apps: appsPane(host),
     weather: weatherPane(host),
     region: regionPane(),
+    privacy: privacyPane(host),
     setup: setupAgainPane(),
     about: aboutPane(),
   };
