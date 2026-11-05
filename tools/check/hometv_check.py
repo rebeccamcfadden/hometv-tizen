@@ -5,15 +5,18 @@ site/check/index.html, says how). It:
 
   1. checks the laptop (Windows, the network) and finds the TV,
   2. reads the TV's model and software (only what the report allows: report-schema.json),
-  3. makes the TV's certificate: you sign in to your Samsung account in the browser (AeroTizen's `certs` step),
-  4. signs and installs the small check app ("HomeTV Check"), and starts it,
-  5. waits while you follow the TV's screen, then reads the TV's results,
-  6. removes the check app again, and
-  7. writes HomeTV-check-report-<date>.txt and .json on the Desktop.
+  3. backs up what the TV says about itself and its list of apps, into a new folder (check_backup.py), before
+     anything is installed,
+  4. makes the TV's certificate: you sign in to your Samsung account in the browser (AeroTizen's `certs` step),
+  5. signs and installs the small check app ("HomeTV Check"), and starts it,
+  6. waits while you follow the TV's screen, then reads the TV's results,
+  7. removes the check app again, and
+  8. writes HomeTV-check-report-<date>.txt and .json on the Desktop.
 
 Nothing else on the TV changes. Built on AeroTizen's CLI (MIT, vendor/aerotizen/cli), unmodified.
 
   hometv_check.py                       the real thing
+  hometv_check.py --backup-only         only step 3 (and what it needs): nothing is installed
   hometv_check.py --dry-run             walk through every step without a TV (fake answers), for testing
   hometv_check.py --host 192.168.1.50   use this TV (or an emulator), don't search the network
 """
@@ -48,6 +51,7 @@ def _paths():
 
 _paths()
 
+import check_backup  # noqa: E402
 import check_report  # noqa: E402
 
 APP_ID = "HmTvCheck0.HomeTVCheck"
@@ -194,13 +198,23 @@ class Tv:
 
     def info(self):
         """The TV's own description (port 8001), or {} when it doesn't answer (the emulator)."""
+        return (self.description() or {}).get("device", {})
+
+    def description(self):
+        """The whole of /api/v2/ (http on 8001, else https on 8002), or None when neither answers. Read-only. The
+        TV's certificate on 8002 is its own, self-signed, so it isn't checked: only this one GET goes over it."""
+        import ssl
         import urllib.request
 
-        try:
-            with urllib.request.urlopen(f"http://{self.host}:8001/api/v2/", timeout=5) as r:
-                return json.load(r).get("device", {})
-        except (OSError, ValueError):
-            return {}
+        for url, ctx in ((f"http://{self.host}:8001/api/v2/", None), (f"https://{self.host}:8002/api/v2/", ssl._create_unverified_context())):
+            try:
+                with urllib.request.urlopen(url, timeout=5, context=ctx) as r:
+                    answer = json.load(r)
+                if isinstance(answer, dict):
+                    return answer
+            except (OSError, ValueError):
+                continue
+        return None
 
     def http_get(self, session, port, path):
         """One GET to a service on the TV's own 127.0.0.1, through Developer Mode (AeroTizen's tcp_request).
@@ -265,6 +279,9 @@ class Check:
             "python": platform.python_version(),
         }
         self.tv_report = {}
+        self.tv_answer = None
+        self.app_list = None
+        self.backup_folder = None
         self.cert_dir = None
         self.tv = None
         self.installed = False
@@ -283,7 +300,10 @@ class Check:
             host = self.find_tv()
             if host:
                 self.tv = None if self.dry else Tv(host, self.args.sdb_port)
-                if self.developer_mode(host) and self.connect_and_read(host):
+                connected = self.developer_mode(host) and self.connect_and_read(host)
+                # The backup comes before anything is installed (docs/backup.md).
+                self.backup()
+                if connected and not self.args.backup_only:
                     if self.certificate() and self.install_and_start():
                         self.service_checks_from_laptop()
                         self.wait_for_tv()
@@ -297,6 +317,9 @@ class Check:
             with contextlib.suppress(Exception):
                 self.remove_check_app()
         self.laptop["minutes"] = max(0, round((time.monotonic() - self.started) / 60))
+        if self.args.backup_only:
+            self.finish_backup_only()
+            return
         self.finish()
 
     def laptop_check(self):
@@ -408,6 +431,9 @@ class Check:
             self.laptop["apps"] = {"count": 42, "known": check_report.known_from_app_ids(["111299001912", "3201907018807"])}
             p.say("Samsung UE43TU7000 (made up), Tizen 5.5. 42 apps, with YouTube and Netflix.")
             self.duid = "dry-run"
+            self.tv_answer = dry_tv_answer()
+            self.app_list = [{"appid": "111299001912", "name": "YouTube", "version": "2.1.497"},
+                             {"appid": "3201907018807", "name": "Netflix", "version": "5.2.1"}]
             return True
         from aerotizen.sdb import SdbError
 
@@ -430,13 +456,53 @@ class Check:
                     continue
                 return False
         self.laptop["sdb"] = "connected"
-        self.laptop["tv"] = tv_facts(self.tv.info(), caps)
+        self.tv_answer = self.tv.description()
+        device = (self.tv_answer or {}).get("device")
+        self.laptop["tv"] = tv_facts(device if isinstance(device, dict) else {}, caps)
         ids = app_ids(applist)
+        from aerotizen import catalog
+
+        self.app_list = catalog.parse_applist(applist)
         known = check_report.known_from_app_ids(app_ids(applist, store_ids=True))
         self.laptop["apps"] = {"count": len(ids), "known": known}
         t = check_report.clean(self.laptop["tv"], check_report.SCHEMA["laptop"]["tv"]) or {}
         p.say(f"TV: {t.get('modelName', 'Samsung')}, Tizen {t.get('platformVersion', '?')}. {len(ids)} apps on it.")
         return True
+
+    def backup(self):
+        """The TV's backup (check_backup.py, docs/backup.md), before anything is installed: a new folder each time."""
+        p = self.person
+        p.step("Backing up what the TV says about itself")
+        if self.tv_answer is None and not self.dry and self.tv:
+            self.tv_answer = self.tv.description()  # needs no Developer Mode
+        stamp = datetime.date.today().isoformat()
+        try:
+            folder, manifest = check_backup.write_backup(self.out_dir, stamp, TOOL_VERSION, self.tv_answer, self.app_list)
+        except OSError as e:
+            self.laptop["backup"] = "none"
+            p.say(f"The backup couldn't be written: {e}")
+            return
+        self.backup_folder = folder
+        got = manifest["captured"]
+        self.laptop["backup"] = "saved" if all(got.values()) else ("partial" if any(got.values()) else "none")
+        p.say(
+            f"Saved in a new folder: {folder}",
+            f"  The TV's description: {'saved' if got['tvInfo'] else 'NOT captured (the TV did not answer)'}",
+            f"  The list of apps: {'saved, ' + str(manifest['appCount']) + ' apps' if got['apps'] else 'NOT captured'}",
+            "RESTORE.txt in it says, in plain words, what is kept and how to go back.",
+        )
+
+    def finish_backup_only(self):
+        p = self.person
+        p.step("Done")
+        if self.backup_folder:
+            p.say(f"The backup is in {self.backup_folder}", "Nothing was installed and nothing on the TV changed.")
+        else:
+            p.say("No backup was made: the TV wasn't found.")
+        if not self.dry and not self.args.no_pause:
+            p.wait("Press Enter to close.")
+        if self.laptop.get("backup") not in ("saved", "partial"):
+            raise SystemExit(1)
 
     def certificate(self):
         """The TV's certificate (AeroTizen's certs step): kept in AeroTizen's folder for this TV."""
@@ -688,6 +754,12 @@ class Check:
             "PLEASE SEND BOTH FILES to the person who sent you the link (attach them to an email or a message).",
             "They hold only what the instructions page lists: no names, addresses, serial numbers or accounts.",
         )
+        if self.backup_folder:
+            p.say(
+                "",
+                "The TV's backup, from before the check, is in this folder (keep it; you don't need to send it):",
+                f"   {self.backup_folder}",
+            )
         if self.cert_dir and self.laptop.get("certs") in ("made", "existing") and not self.dry:
             p.say(
                 "",
@@ -794,6 +866,21 @@ def inspector_child(host, sdb_port, local_port):
     return 0
 
 
+def dry_tv_answer():
+    """A made-up /api/v2/ answer, with the identifiers a real one carries (dry run only: the backup drops them)."""
+    return {
+        "device": {
+            "type": "Samsung SmartTV", "OS": "Tizen", "model": "20_MUSEL_UHD", "modelName": "UE43TU7000",
+            "firmwareVersion": "Unknown", "resolution": "3840x2160", "networkType": "wireless", "developerMode": "1",
+            "PowerState": "on", "TokenAuthSupport": "true", "VoiceSupport": "true",
+            "name": "dry-run-dropped", "duid": "uuid:00000000-0000-0000-0000-000000000000", "id": "dry-run-dropped",
+            "wifiMac": "00:00:5E:00:53:01", "ip": "192.168.1.50", "ssid": "dry-run-dropped", "developerIP": "192.168.1.23",
+        },
+        "id": "uuid:00000000-0000-0000-0000-000000000000", "name": "dry-run-dropped", "version": "2.0.25",
+        "uri": "http://192.168.1.50:8001/api/v2/",
+    }
+
+
 def dry_tv_report():
     """A made-up TV report, as the check page would leave it (dry run only)."""
     return {
@@ -845,6 +932,7 @@ def make_throwaway_certs(folder):
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="hometv_check", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="walk through every step with made-up answers; no TV, no network")
+    parser.add_argument("--backup-only", action="store_true", help="only back up what the TV says about itself and its apps; install nothing")
     parser.add_argument("--host", "--target", "--tv", dest="host", help="the TV's (or emulator's) address; skips the search")
     parser.add_argument("--sdb-port", type=int, default=None, help="Developer Mode port (default 26101)")
     parser.add_argument("--cert-dir", help="a folder with author.p12, distributor.p12, password.txt, device-profile.xml (skips the sign-in)")

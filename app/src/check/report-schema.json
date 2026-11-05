@@ -84,6 +84,7 @@
     "developerMode": "enum:on|off|unknown",
     "hostPcIp": "enum:this-laptop|other|unknown",
     "sdb": "enum:connected|refused",
+    "backup": "enum:saved|partial|none",
     "tv": {
       "modelName": "re:model",
       "model": "re:model",

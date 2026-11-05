@@ -155,7 +155,10 @@ test('the check tool’s dry run writes a clean report', (t) => {
   try {
     const res = spawnSync(python, [path.join(root, 'tools', 'check', 'hometv_check.py'), '--dry-run', '--out', out, '--no-pause'], { encoding: 'utf8', timeout: 60000 });
     assert.equal(res.status, 0, res.stderr + res.stdout);
-    const files = fs.readdirSync(out).sort();
+    const all = fs.readdirSync(out).sort();
+    const backups = all.filter((f) => f.startsWith('HomeTV-Backup-'));
+    const files = all.filter((f) => !f.startsWith('HomeTV-Backup-'));
+    assert.equal(backups.length, 1, 'the backup is made first, in its own folder');
     assert.equal(files.length, 2);
     assert.match(files[0], /^HomeTV-check-report-\d{4}-\d{2}-\d{2}\.json$/);
     assert.match(files[1], /^HomeTV-check-report-\d{4}-\d{2}-\d{2}\.txt$/);
@@ -164,7 +167,73 @@ test('the check tool’s dry run writes a clean report', (t) => {
     const rep = JSON.parse(fs.readFileSync(path.join(out, files[0]), 'utf8'));
     assert.equal(rep.tv.finished, true);
     assert.equal(rep.laptop.install, 'ok');
+    assert.equal(rep.laptop.backup, 'saved');
+    assert.ok(res.stdout.indexOf('Backing up') < res.stdout.indexOf('The TV\'s certificate'), 'backup before the certificate and the install');
     assert.match(res.stdout, /signed HomeTV-Check-App\.wgt/);
+  } finally {
+    fs.rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test('the backup-only dry run installs nothing and keeps no identifiers', (t) => {
+  const python = findPython(['cryptography', 'websocket']);
+  if (!python) return t.skip('no Python with cryptography and websocket-client here (set HOMETV_PYTHON)');
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'hometv-backup-'));
+  try {
+    const run = () => spawnSync(python, [path.join(root, 'tools', 'check', 'hometv_check.py'), '--dry-run', '--backup-only', '--out', out, '--no-pause'], { encoding: 'utf8', timeout: 60000 });
+    const res = run();
+    assert.equal(res.status, 0, res.stderr + res.stdout);
+    assert.doesNotMatch(res.stdout, /Installing|certificate|signed/);
+    assert.equal(run().status, 0);
+    const folders = fs.readdirSync(out).sort();
+    assert.equal(folders.length, 2, 'a second run makes a second folder');
+    assert.match(folders[0], /^HomeTV-Backup-\d{4}-\d{2}-\d{2}$/);
+    assert.match(folders[1], /^HomeTV-Backup-\d{4}-\d{2}-\d{2}-2$/);
+    const dir = path.join(out, folders[0]);
+    assert.deepEqual(fs.readdirSync(dir).sort(), ['RESTORE.txt', 'SHA256SUMS', 'apps.json', 'backup.json', 'tv-info.json']);
+    const text = fs.readdirSync(dir).map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
+    for (const s of ['192.168.', '00:00:5E', 'dry-run-dropped', 'uuid:', '"ip"', '"duid"', '"wifiMac"', '"ssid"', '"name": "dry', '"uri"']) assert.ok(!text.includes(s), `backup holds ${s}`);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(dir, 'tv-info.json'), 'utf8')).device.modelName, 'UE43TU7000');
+  } finally {
+    fs.rmSync(out, { recursive: true, force: true });
+  }
+});
+
+test('the backup never overwrites, strips identifiers, and an empty read is not a baseline', (t) => {
+  const python = findPython();
+  if (!python) return t.skip('no Python here');
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'hometv-backup-'));
+  const answer = {
+    device: { modelName: 'UE43TU7000', model: '20_MUSEL_UHD', OS: 'Tizen', firmwareVersion: 'T-MSLDEUC-1234.5', wifiMac: SECRETS[1], ip: SECRETS[0], name: SECRETS[4], ssid: SECRETS[5], duid: 'uuid:0f0e0d0c-0b0a-0908-0706-050403020100', id: 'uuid:0f0e0d0c-0b0a-0908-0706-050403020100', developerIP: SECRETS[0] },
+    id: 'uuid:0f0e0d0c', name: SECRETS[4], uri: `http://${SECRETS[0]}:8001/api/v2/`, version: '2.0.25',
+  };
+  const apps = [{ appid: 'org.tizen.netflix-app', pkgid: 'org.tizen', name: 'Netflix', version: '5.2.1', raw: SECRETS[2] }, { appid: SECRETS[0], name: 'x' }];
+  const script = `import json,sys,os; sys.path.insert(0, ${JSON.stringify(path.join(root, 'tools', 'check'))}); import check_backup as b
+d=json.load(sys.stdin); out=d['out']
+f1,m1=b.write_backup(out,'2026-11-06','1.0.0',d['answer'],d['apps'])
+before=open(os.path.join(f1,'SHA256SUMS')).read()
+f2,m2=b.write_backup(out,'2026-11-06','1.0.0',None,[])
+f3,m3=b.write_backup(out,'2026-11-06','1.0.0',{'device':{}},None)
+print(json.dumps({'f':[os.path.basename(f) for f in (f1,f2,f3)],'m':[m1,m2,m3],'same':open(os.path.join(f1,'SHA256SUMS')).read()==before,'ok':[b.verify(f) for f in (f1,f2,f3)]}))`;
+  try {
+    const res = spawnSync(python, ['-c', script], { input: JSON.stringify({ out, answer, apps }), encoding: 'utf8' });
+    assert.equal(res.status, 0, res.stderr);
+    const r = JSON.parse(res.stdout);
+    assert.deepEqual(r.f, ['HomeTV-Backup-2026-11-06', 'HomeTV-Backup-2026-11-06-2', 'HomeTV-Backup-2026-11-06-3']);
+    assert.equal(r.same, true, 'the first folder is untouched');
+    assert.deepEqual(r.ok, [true, true, true], 'SHA256SUMS match');
+    assert.deepEqual(r.m[0].captured, { tvInfo: true, apps: true });
+    assert.equal(r.m[0].appCount, 1, 'an app id that looks like an address is dropped');
+    for (const m of [r.m[1], r.m[2]]) assert.deepEqual(m.captured, { tvInfo: false, apps: false }, 'an empty or failed read is not a baseline');
+    const first = path.join(out, r.f[0]);
+    const text = fs.readdirSync(first).map((f) => fs.readFileSync(path.join(first, f), 'utf8')).join('\n');
+    for (const s of SECRETS.slice(0, 3).concat([SECRETS[4], SECRETS[5], 'uuid:', '0f0e0d0c', '"raw"', '"pkgid"'])) assert.ok(!text.includes(s), `backup holds ${s}`);
+    assert.match(text, /T-MSLDEUC-1234\.5/);
+    const empty = path.join(out, r.f[1]);
+    assert.deepEqual(fs.readdirSync(empty).sort(), ['RESTORE.txt', 'SHA256SUMS', 'backup.json']);
+    const restore = fs.readFileSync(path.join(empty, 'RESTORE.txt'), 'utf8');
+    assert.match(restore, /INCOMPLETE/);
+    assert.match(restore, /picture/i);
   } finally {
     fs.rmSync(out, { recursive: true, force: true });
   }

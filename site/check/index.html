@@ -59,6 +59,9 @@ this link. It takes <strong>about 40 minutes</strong>.</p>
   <li>To install an app, Samsung needs a certificate for that one TV. The tool makes it after you
     <strong>sign in to your Samsung account</strong> in the laptop's web browser. The tool never sees your password:
     you type it into Samsung's own page.</li>
+  <li>Before it installs anything, it <strong>backs up</strong> what the TV says about itself (model, software) and the
+    list of its apps, into a new folder beside the report: <code>HomeTV-Backup-</code> and the date. It's for you to
+    keep, not to send; <code>RESTORE.txt</code> in it says what it holds and how to go back.</li>
   <li>At the end it writes a <strong>report</strong> on the laptop's Desktop for you to send back.
     <a href="#report">What's in the report</a>.</li>
 </ul>
@@ -179,8 +182,8 @@ this link. It takes <strong>about 40 minutes</strong>.</p>
   <li><strong>The laptop:</strong> the Windows version, the tool's, Python's and AeroTizen's versions, the date and how
     many minutes the check took.</li>
   <li><strong>How it went:</strong> whether the laptop found the TV, whether Developer Mode was on and pointed at this
-    laptop (yes or no, not the address), whether the certificate was made, whether the check app installed, started and
-    was removed again.</li>
+    laptop (yes or no, not the address), whether the backup was saved, whether the certificate was made, whether the
+    check app installed, started and was removed again.</li>
   <li><strong>Apps:</strong> how many apps the TV has, and for each of these whether it's there (yes or no): Netflix,
     YouTube, Prime Video, Disney+, HBO Max, Apple TV, Hulu, Peacock, Paramount+, Spotify, Plex, Tubi, Pluto TV. Not the
     list of your apps.</li>
