@@ -100,7 +100,7 @@ def render_text(report):
         f"  Tizen: {t.get('osVersion') or lt.get('platformVersion') or '?'}   Web engine: Chromium {t.get('chromium', '?')}"
         f"   Screen: {t.get('screen', '?')}",
         f"  Developer Mode: {lap.get('developerMode', '?')}, Host PC IP: {lap.get('hostPcIp', '?')}, "
-        f"connection: {lap.get('sdb', '?')}",
+        f"connection: {lap.get('sdb', '?')}, backup before the check: {lap.get('backup', '?')}",
         "",
         "APPS",
         f"  The laptop's list: {lap.get('apps', {}).get('count', '?')} apps; known: {_yes(lap.get('apps', {}).get('known'))}",

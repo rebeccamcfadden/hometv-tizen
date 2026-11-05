@@ -153,6 +153,11 @@ export function createPrefs(storage: KeyValueStore | null) {
       savePrefs(storage, data);
       listeners.slice().forEach((fn) => fn());
     },
+    /** Reads the storage again (after Restore previous settings, settingsBackup.ts) and tells the listeners. */
+    reload() {
+      data = loadPrefs(storage);
+      listeners.slice().forEach((fn) => fn());
+    },
     /** Calls `fn` on every change; returns a function that stops it. */
     on(fn: () => void): () => void {
       listeners.push(fn);

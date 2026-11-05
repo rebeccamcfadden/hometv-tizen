@@ -147,7 +147,7 @@ export async function bundleFiles({ wgt, offline = false }) {
   }
   const aero = path.join(root, 'vendor', 'aerotizen', 'cli', 'src', 'aerotizen');
   for (const rel of walk(aero)) add('lib/aerotizen/' + rel, lf(rel, fs.readFileSync(path.join(aero, rel))));
-  for (const f of ['hometv_check.py', 'check_report.py']) add('app/' + f, lf(f, fs.readFileSync(path.join(root, 'tools', 'check', f))));
+  for (const f of ['hometv_check.py', 'check_report.py', 'check_backup.py']) add('app/' + f, lf(f, fs.readFileSync(path.join(root, 'tools', 'check', f))));
   add('app/report-schema.json', lf('.json', fs.readFileSync(path.join(root, 'app', 'src', 'check', 'report-schema.json'))));
   add(WGT_NAME, wgt);
   add('Start HomeTV Check.cmd', START_CMD.replace(/\n/g, '\r\n'));

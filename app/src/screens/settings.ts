@@ -7,7 +7,9 @@
 import './settings.css';
 import { homeRow } from '../apps';
 import { bridge } from '../bridge';
-import { MOTION_LABELS, prefs, REGION_LABELS, SCREENSAVER_AFTER_LABELS } from '../launcherSettings';
+import { ago } from '../clockText';
+import { MOTION_LABELS, pageStorage, prefs, REGION_LABELS, SCREENSAVER_AFTER_LABELS } from '../launcherSettings';
+import { changeSet, readPrevious, restorePrevious } from '../settingsBackup';
 import { shell, type Screen } from '../shell/app';
 import { h, replace } from '../shell/dom';
 import { focusable } from '../shell/focus';
@@ -53,16 +55,38 @@ const GROUPS: { title: string; items: SectionId[] }[] = [
   { title: 'This TV', items: ['region', 'privacy', 'setup', 'about'] },
 ];
 
-/** First run again, from Settings: the same steps as on the first start. */
-const setupAgainPane = (): Pane => ({
+const PREVIOUS_WHY = { settings: 'before a visit to Settings', setup: 'before first run', restore: 'before the last restore' };
+
+/**
+ * First run again, from Settings: the same steps as on the first start. And Restore previous settings
+ * (settingsBackup.ts): HomeTV's own settings as they were before the last visit to Settings or first run that changed
+ * something; Restore again undoes it.
+ */
+const setupAgainPane = (host: PaneHost, onRestored: () => void): Pane => ({
   render: () => {
     const b = button('Open first run', { icon: 'chevRight', primary: true, key: 'setup-open', onOk: () => showSetup() });
     b.setAttribute('data-entry', '');
+    const prev = readPrevious(pageStorage());
+    const restore = () => {
+      if (!restorePrevious(pageStorage(), Date.now())) return shell.toast('Nothing to restore.');
+      onRestored();
+      prefs.reload();
+      host.rerender();
+      shell.toast('Previous settings restored. Restore again to undo.');
+    };
     return [
       h('div.eyebrow', 'First run'),
       h('div.pane-title', 'Set up again'),
       h('div.pane-sub', 'The steps HomeTV showed on its first start: where this TV is, and the weather place. Each keeps what you chose until you change it.'),
       h('div.pane-actions', b),
+      h('div.perf-title', 'Previous settings'),
+      h(
+        'div.pane-sub',
+        prev
+          ? `HomeTV’s settings as they were ${PREVIOUS_WHY[prev.why]}, ${ago(prev.at, Date.now())}: region, weather place, screensaver, motion and Home’s row. Samsung’s own settings aren’t in it.`
+          : 'Nothing kept yet. HomeTV keeps its settings as they were before each change in Settings or first run.',
+      ),
+      prev ? h('div.pane-actions', button('Restore previous settings', { icon: 'back', key: 'settings-restore', onOk: restore })) : null,
     ];
   },
 });
@@ -72,6 +96,8 @@ export function settingsScreen(initial: SectionId = 'apps'): Screen {
   let current: SectionId = initial;
   let shown: SectionId | null = null;
   let inPane = false;
+  // This visit's change set: kept when the page closes, if anything changed (Restore previous settings).
+  const backup = changeSet(pageStorage(), 'settings');
 
   const list = h('div.sec-list.sec-list--grouped', { 'data-scroll': 'y', 'data-scroll-pad': 56 });
   const scroll = h('div.pane-scroll', { 'data-scroll': 'y', 'data-scroll-pad': 40 });
@@ -94,7 +120,7 @@ export function settingsScreen(initial: SectionId = 'apps'): Screen {
     weather: weatherPane(host),
     region: regionPane(),
     privacy: privacyPane(host),
-    setup: setupAgainPane(),
+    setup: setupAgainPane(host, () => backup.rebase()),
     about: aboutPane(),
   };
 
@@ -199,6 +225,7 @@ export function settingsScreen(initial: SectionId = 'apps'): Screen {
     if (shell.has(screen)) return;
     offs.forEach((off) => off());
     offStack();
+    backup.end();
   });
   return screen;
 }
