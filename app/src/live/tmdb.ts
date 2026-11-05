@@ -108,6 +108,23 @@ export function genreNames(kind: Kind, ids: number[]): string[] {
   return out;
 }
 
+/** TMDB's genre id for one of the launcher's genre names, for discover; null when the kind has no such genre alone. */
+export function genreId(kind: Kind, name: string): number | null {
+  const table = kind === 'movie' ? MOVIE_GENRES : TV_GENRES;
+  for (const k of Object.keys(table)) if (table[Number(k)].length === 1 && table[Number(k)][0] === name) return Number(k);
+  // TV's combined genres ("Action & Adventure") discover under their own id for either name.
+  for (const k of Object.keys(table)) if (table[Number(k)].indexOf(name) >= 0) return Number(k);
+  return null;
+}
+
+/** The popular titles of a genre, as the launcher's discover does: well voted, for the region's cinemas when a movie. */
+export function discoverReq(kind: Kind, genre: number, region: string): Req {
+  const params: [string, string | number][] = [['with_genres', genre], ['sort_by', 'popularity.desc'], ['vote_count.gte', 200], ['include_adult', 'false'], lang];
+  if (kind === 'movie') params.push(['region', region.toUpperCase()]);
+  params.push(['page', 1]);
+  return { path: `/discover/${seg(kind)}?${q(params)}`, ttl: TTL.list };
+}
+
 /** Every genre name a kind of title can have, sorted. */
 export function allGenres(kind: Kind): string[] {
   const table = kind === 'movie' ? MOVIE_GENRES : TV_GENRES;

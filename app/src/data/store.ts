@@ -1,8 +1,8 @@
 // TEMPORARY copy of hometv-launcher's design_preview/src/core/store.ts at 2bf3c2d: the household's own state that the
 // title page's buttons and Search change (My list, Seen, Favorites, recent searches, recently viewed), until it has a
 // home on Samsung (TMDB's lists once the account is shared). Changes: its own storage key; Set spread written out;
-// blocked or full storage keeps changes for this visit only; reset() doesn't reload the page.
-import { TITLES } from './catalog';
+// blocked or full storage keeps changes for this visit only; reset() doesn't reload the page; it starts empty, with no
+// sample titles, and keeps titles by their live ids (`movie:603`, `tv:1396`).
 
 interface Persisted {
   myList: string[];
@@ -17,11 +17,11 @@ const KEY = 'hometv-household-v1';
 const MAX_RECENT = 4;
 
 const defaults = (): Persisted => ({
-  myList: TITLES.filter((t) => t.lists.indexOf('my') >= 0).map((t) => t.id),
-  seen: ['knives-out', 'budapest'],
-  favorites: ['arrival'],
-  recent: ['dune', 'amy adams', 'sci-fi', 'carnival row'],
-  viewed: ['arrival', 'dune', 'past-lives', 'coda', 'moon', 'severance'],
+  myList: [],
+  seen: [],
+  favorites: [],
+  recent: [],
+  viewed: [],
 });
 
 function load(): Persisted {

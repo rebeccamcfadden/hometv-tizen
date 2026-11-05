@@ -27,7 +27,7 @@ function retarget(text) {
   return text.split('DclHome001.Home').join(APP_ID).split('47790').join(PORT);
 }
 
-/** The sample catalogue's titles (app/src/data/catalog.ts) in a built page. */
+/** The sample catalogue's titles (tests/fixtures/sample-catalog.ts) in a built page. */
 export const sampleIn = (js) => /Knives Out|Past Lives|Severance/.test(js);
 
 const build = path.join(root, 'tizen', 'build');
@@ -36,10 +36,10 @@ fs.mkdirSync(path.join(build, 'aero', 'service'), { recursive: true });
 fs.mkdirSync(path.join(build, 'aero', 'js'), { recursive: true });
 fs.copyFileSync(path.join(root, 'tizen', 'config.xml'), path.join(build, 'config.xml'));
 if (!fs.existsSync(path.join(root, 'dist', 'index.html'))) throw new Error('Run `npm run build` first.');
-// No sample data on a TV, ever: a v1 build still carries the sample catalogue. --allow-sample is for
-// the emulator only.
+// No sample data on a TV, ever. A v1 build reads TMDB (app/src/live), so it passes; a page that still carries the
+// sample catalogue is refused. --allow-sample is for the emulator only.
 if (sampleIn(fs.readFileSync(path.join(root, 'dist', 'assets', 'app.js'), 'utf8')) && process.argv.indexOf('--allow-sample') < 0) {
-  throw new Error('dist/ has the sample catalogue (a HOMETV_V1=1 build). Build v0 (npm run build), or pass --allow-sample for the emulator only.');
+  throw new Error('dist/ has the sample catalogue. Rebuild without it, or pass --allow-sample for the emulator only.');
 }
 fs.cpSync(path.join(root, 'dist'), path.join(build, 'dist'), { recursive: true });
 for (const f of fs.readdirSync(path.join(aero, 'service'))) {

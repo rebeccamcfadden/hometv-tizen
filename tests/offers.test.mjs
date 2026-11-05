@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { loadTs } from './ts-module.mjs';
 
 // One bundle, so the offers read the same settings the test changes.
-const { o, s, c, rent } = await loadTs({ o: 'data/offers.ts', s: 'data/settings.ts', c: 'data/catalog.ts', rent: 'screens/rentRules.ts' });
+const { o, s, c, rent } = await loadTs({ o: 'data/offers.ts', s: 'data/settings.ts', c: '../../tests/fixtures/sample-catalog.ts', rent: 'screens/rentRules.ts' });
 const t = c.getTitle;
 test.afterEach(() => s.settings.reset());
 

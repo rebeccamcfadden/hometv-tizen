@@ -172,8 +172,15 @@ export function miniCard(t: Title, opts: FocusOpts & { name?: Node | string } = 
   return focusable(h('div.card.card--mini', { 'data-title': t.id }, art), opts);
 }
 
-export function personCard(name: string, role: string, opts: FocusOpts = {}): HTMLElement {
-  return focusable(h('div.person', h('div.person-portrait', initials(name)), h('div.person-name', name), h('div.person-role', role)), opts);
+export function personCard(name: string, role: string, opts: FocusOpts & { photo?: string | null } = {}): HTMLElement {
+  const portrait = h('div.person-portrait', initials(name));
+  if (opts.photo) {
+    // The face over the initials; if it won't load the initials stay.
+    const img = h('img', { src: opts.photo, alt: '' }) as HTMLImageElement;
+    img.onerror = () => img.remove();
+    portrait.appendChild(img);
+  }
+  return focusable(h('div.person', portrait, h('div.person-name', name), h('div.person-role', role)), opts);
 }
 
 /** A labelled row that scrolls sideways; `pad` keeps the focused card that far from its edges. */

@@ -6,7 +6,7 @@
 import type { Kind } from '@hometv/core/types.ts';
 import type { Cache } from './cache';
 import * as parse from './parse';
-import { API, detailsReq, listReq, parseId, personReq, searchReq, seasonReq } from './tmdb';
+import { API, detailsReq, discoverReq, genreId, listReq, parseId, personReq, searchReq, seasonReq } from './tmdb';
 import type { ListDef, Req } from './tmdb';
 import type { Credits, Found, LiveSeason, LiveTitle } from './types';
 
@@ -53,6 +53,8 @@ export interface Client {
   details(id: string): Promise<Result<LiveTitle>>;
   season(id: string, n: number, fallbackRuntime: number): Promise<Result<LiveSeason>>;
   person(n: number): Promise<Result<Credits>>;
+  /** The popular titles of a genre of this kind; an empty answer when the kind has no such genre. */
+  genre(kind: Kind, name: string): Promise<Result<LiveTitle[]>>;
   search(query: string): Promise<Result<Searched>>;
 }
 
@@ -124,6 +126,14 @@ export function createClient(deps: Deps): Client {
     person(n) {
       const req = personReq(n);
       return request(req, req.path, (j) => parse.credits(j));
+    },
+
+    genre(kind, name) {
+      const id = genreId(kind, name);
+      if (id === null) return Promise.resolve({ value: [], status: 'ok' });
+      const r = region();
+      const req = discoverReq(kind, id, r);
+      return request(req, `${kind === 'movie' ? r : ''}${req.path}`, (j) => parse.listItems(j, kind));
     },
 
     search(query) {
