@@ -85,6 +85,9 @@ export function privacyPane(host: PaneHost): Pane {
       checked = recheck(privacy.get().snapshot, readout);
       host.rerender();
       host.focusKey('pv-recheck');
+      // The result and the note under it sit below the button, which has focus: bring them into view.
+      const tail = document.querySelector('.pv-result + .pane-note') || document.querySelector('.pv-result');
+      if (tail) tail.scrollIntoView(false);
     });
     host.rerender();
   }
