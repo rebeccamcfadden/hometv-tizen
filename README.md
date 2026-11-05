@@ -16,7 +16,8 @@ is in [LICENSE](LICENSE) and `vendor/aerotizen/LICENSE`. The shared logic comes 
 so far: [docs/research.md](docs/research.md). How another TV's port shares the screens: [docs/platform.md](docs/platform.md).
 Beyond HomeTV: [docs/privacy.md](docs/privacy.md) (tracking and ads off),
 [docs/launcher-replacement.md](docs/launcher-replacement.md) (how far a home screen can replace Samsung's),
-[docs/jailbreak.md](docs/jailbreak.md) (the options, safest first).
+[docs/jailbreak.md](docs/jailbreak.md) (the options, safest first), [docs/backup.md](docs/backup.md) (what's kept
+before a change, and how to go back).
 
 ## What's here
 

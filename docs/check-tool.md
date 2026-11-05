@@ -29,6 +29,25 @@ with GitHub Pages at `https://rebeccamcfadden.github.io/hometv-tizen/check/`.
 5. **The report**: the laptop reads the TV's results (below), removes the check app, and writes
    `HomeTV-check-report-<date>.txt` and `.json` on the Desktop.
 
+## The backup, before anything is installed
+
+Right after it reads the TV, and before the certificate or any install, the tool writes a backup into a new folder
+beside the report: `HomeTV-Backup-<date>`, or `-2`, `-3`… when that exists. A folder is never reused and no file is
+ever overwritten. `hometv_check.py --backup-only` does only this and installs nothing; with `--dry-run` it uses made-up
+answers, for the tests. In it:
+
+- `tv-info.json`: the TV's own description (`GET http://<tv>:8001/api/v2/`, else `https://<tv>:8002/api/v2/`), with
+  only the allowlisted fields (`check_backup.py`, `DEVICE_FIELDS`): model, software, screen, network type, Developer
+  Mode and the support flags. Never its name, id, DUID, MAC, IP or Wi-Fi name.
+- `apps.json`: the installed apps' ids, names and versions, read over the Developer Mode connection (AeroTizen's
+  `applist`, read-only). It stays on the person's laptop; the report still holds only the known apps' yes or no.
+- `backup.json` (what was captured), `RESTORE.txt` (plain words: what is kept, what isn't, how to go back) and
+  `SHA256SUMS`.
+
+A read that failed or came back empty is marked "not captured" and its file is left out: it is never kept as the TV's
+state. The report says `backup: saved`, `partial` or `none`. Samsung's own settings can't be exported at all; see
+[backup.md](backup.md), which also covers HomeTV's "Restore previous settings" on the TV.
+
 Only the fields in [`app/src/check/report-schema.json`](../app/src/check/report-schema.json) can be in the report:
 each has a rule (yes/no, a number in a range, one of a list, or a pattern), and anything else is dropped twice, on the
 TV (`report.ts`) and on the laptop (`check_report.py`). No serials, device ids, addresses, account names, Wi-Fi names
