@@ -7,6 +7,7 @@
 // (`hometv-setup-done`), and again from Settings › First run.
 import './settings.css';
 import { markSetupDone, pageStorage, prefs, REGION_LABELS } from '../launcherSettings';
+import { changeSet } from '../settingsBackup';
 import { shell, type Screen } from '../shell/app';
 import { h, replace } from '../shell/dom';
 import { focusable } from '../shell/focus';
@@ -60,6 +61,9 @@ export const STEPS: Step[] = [
 ];
 
 export function setupScreen(): Screen {
+  // HomeTV's settings as first run found them, kept when it ends if it changed anything (Settings › First run's
+  // Restore previous settings, settingsBackup.ts).
+  const backup = changeSet(pageStorage(), 'setup');
   const done: Record<string, boolean> = {};
   const doneCount = () => STEPS.filter((s) => done[s.id]).length;
   /** The panel showing on the right; null while the checklist is wide. */
@@ -307,6 +311,7 @@ export function setupScreen(): Screen {
     offs.forEach((off) => off());
     offStack();
     markSetupDone(pageStorage());
+    backup.end();
   });
 
   paint();
