@@ -22,6 +22,7 @@ port to another TV (LG's webOS: hometv-webos) copies the screens and the shell u
 | `mode()`, `problem()` | the mode; why the TV isn't reachable, or `''` | |
 | `apps()` | Home's apps with `installed` true/false/null | AeroTizen's inventory, or the service |
 | `installedApps()` | every app a person would open (`TvApp[]`), or null | AeroTizen's inventory, or the service's `/apps/all` |
+| `appInventory()` | `{ apps, full }` for Settings › Privacy: the TV's whole list (`full`), else what `installedApps()` lists; null when neither | `platform.appList()` in the own app, else `installedApps()` |
 | `appCount()` | how many apps the TV lists | |
 | `artwork(key)` | image URLs for an app's tile, best first | Samsung's icon cache, through AeroTizen |
 | `launch(key, name?)` | `{ ok, id, error? }` | AeroTizen's launcher, or the service's `/launch` |
@@ -43,6 +44,9 @@ port to another TV (LG's webOS: hometv-webos) copies the screens and the shell u
 | `registerButtons(names)` | asks the TV to send these buttons (`'digits'` for 0-9) | `tizen.tvinputdevice.registerKey` |
 | `online()` | false only when the TV says it's offline | `navigator.onLine` |
 | `osVersion()` | the TV software's version ("5.0") for the problem report, or "" | `tizen.systeminfo.getCapability('…/platform.version')` |
+| `model()` | the TV's model code, for Settings › Privacy's year, or "" | `tizen.systeminfo.getCapability('http://tizen.org/system/model_name')` (unchecked whether it's the retail code on a real TV) |
+| `appList()` | every app the TV lists, hidden parts included (`{ id, name }[]`), or null | `tizen.application.getAppsInfo`; null without `tizen` (TizenBrew too) |
+| `knownApps` | the app ids this repo documents, each with its Settings › Privacy bucket (ads, tracking, keep…) | ids from `docs/privacy.md`, this file and the vendored AeroTizen lists |
 | `network()` | how the TV is connected: `{ kind: 'wifi' \| 'ethernet' \| 'none' \| 'unknown', signal, name, online }` (the nav's Wi-Fi) | `systeminfo` NETWORK, then WIFI_NETWORK (name, signal), as AeroTizen's `network.js`; 'unknown' without `tizen` |
 | `onNetworkChange(fn)` | calls `fn` when the connection changes; returns a stop function | NETWORK's change listener, and the page's `online`/`offline` |
 | `inputs.list()` | the TV's inputs (`TvInput[]`: port, device name, connected, showing), or null | `systeminfo` VIDEOSOURCE and `tvwindow.getSource`, as AeroTizen's `inputs.js`; null without `tizen` (TizenBrew too) |

@@ -30,7 +30,7 @@ const perfRow = (title: string, sub: string, control: HTMLElement) =>
   h('div.perf-row', h('div.perf-text', h('div.perf-title', title), h('div.perf-sub', sub)), h('div.perf-ctl', control));
 
 /** → to the next option of the same control, never onto another row's. */
-function rightInControl(host: PaneHost, focused: HTMLElement): boolean {
+export function rightInControl(host: PaneHost, focused: HTMLElement): boolean {
   const seg = focused.closest('.seg');
   if (!seg) return false;
   const opts = Array.prototype.slice.call(seg.querySelectorAll('.seg-opt')) as HTMLElement[];
@@ -44,7 +44,7 @@ function rightInControl(host: PaneHost, focused: HTMLElement): boolean {
  * ← to the previous option of the same control; from the first, back to the section in the list (the page's spatial ←
  * would land on a button lower down the pane).
  */
-function leftInControl(focused: HTMLElement, section: string): boolean {
+export function leftInControl(focused: HTMLElement, section: string): boolean {
   const seg = focused.closest('.seg');
   if (!seg) return false;
   const opts = Array.prototype.slice.call(seg.querySelectorAll('.seg-opt')) as HTMLElement[];

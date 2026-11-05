@@ -128,6 +128,13 @@ Without root, nothing can set Samsung's privacy switches directly: no local or S
 **Recommendation:** a printable/phone checklist (this document's tables, in that TV's year only), the TV's
 own DNS set to AdGuard as the one network step, and a small read-only network check. No key-pressing script.
 
+**In HomeTV (v0):** Settings › Privacy is that guided checklist, without photos: section 1's switches, the home-bar
+steps of section 3 and the DNS step, for the TV's year (from its software version or model code, or the person's
+pick), each with what it stops, what it can break and how to undo it, and a tick the person sets. Below it, a
+read-only report of the TV's apps by what they are (only the ids this repo documents; the rest "unknown", none ever
+offered for removal), and a re-check of what HomeTV can read (the app list and software version) against the last
+tick. Data: `app/src/privacy/`.
+
 ## What can't be removed
 
 - Ads inside apps (Netflix's ad plan, YouTube, Tubi, Pluto): the app's own, not the TV's.

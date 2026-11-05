@@ -3,6 +3,7 @@
 // An LG copy replaces this file (and bridge.ts, pageChecks.ts) and keeps the same shape.
 
 import type { Key } from './shell/app';
+import type { KnownApp } from './privacy/apps';
 
 /** What systeminfo's properties hold, as far as HomeTV reads them (NETWORK, WIFI_NETWORK, ETHERNET_NETWORK, VIDEOSOURCE). */
 interface SysValue {
@@ -219,6 +220,30 @@ const SETTINGS_WHERE: Record<TvPage, string> = {
  */
 const SETTINGS_APP_IDS = ['org.tizen.settings', 'com.samsung.tv.settings'];
 
+/**
+ * App ids from docs/privacy.md, docs/platform.md and the vendored AeroTizen lists, with their bucket. Ids ending in "."
+ * are packages: every app in them matches. No voice or Samsung-extras ids are documented yet (TV Plus is known only
+ * by its store id), so those buckets stay empty and its apps show as unknown.
+ */
+const KNOWN_APPS: KnownApp[] = [
+  { match: 'org.tizen.ADPlayer', bucket: 'ads', what: 'Samsung’s ad player' },
+  { match: 'org.tizen.acr-service-app', bucket: 'tracking', what: 'Samsung’s screen recognition (ACR)' },
+  { match: 'org.tizen.settings', bucket: 'keep', what: 'Samsung’s Settings' },
+  { match: 'com.samsung.tv.settings', bucket: 'keep', what: 'Samsung’s Settings' },
+  { match: 'org.tizen.tv-viewer', bucket: 'keep', what: 'Live TV' },
+  { match: 'org.tizen.hbbtv', bucket: 'keep', what: 'Broadcasters’ red-button apps' },
+  { match: 'org.tizen.netflix-app', bucket: 'keep', what: 'Netflix' },
+  { match: 'org.tizen.primevideo', bucket: 'keep', what: 'Prime Video' },
+  { match: 'com.samsung.tv.aria-video', bucket: 'keep', what: 'Apple TV' },
+  { match: '9Ur5IzDKqV.TizenYouTube', bucket: 'keep', what: 'YouTube' },
+  { match: 'xvvl3S1bvH.TizenBrewStandalone', bucket: 'keep', what: 'TizenBrew' },
+  { match: 'ZODRT12q2l.', bucket: 'keep', what: 'Samsung account plumbing' },
+  { match: 'aQjWjLsPaO.', bucket: 'keep', what: 'Phone casting (MultiScreen)' },
+  { match: '30IKH0OX8U.', bucket: 'keep', what: 'Apple TV’s background part' },
+  { match: 'DclHome001.', bucket: 'keep', what: 'AeroTizen’s launcher' },
+  { match: 'HmTvSpike0.', bucket: 'keep', what: 'HomeTV' },
+];
+
 const PORT_NAMES: Record<string, string> = { COMP: 'Component', SVIDEO: 'S-Video', SCART: 'SCART', PC: 'PC', DVI: 'DVI', AV: 'AV' };
 
 /**
@@ -348,6 +373,36 @@ export const platform = {
       return '';
     }
   },
+
+  /** The TV's model code ("QE55Q60BAUXXU"), for Settings › Privacy's year; "" when unknown. */
+  model(): string {
+    const t = tz();
+    try {
+      const v = t && t.systeminfo && t.systeminfo.getCapability ? t.systeminfo.getCapability('http://tizen.org/system/model_name') : '';
+      return typeof v === 'string' && /^[A-Za-z0-9 _-]{2,40}$/.test(v) ? v.trim() : '';
+    } catch (e) {
+      return '';
+    }
+  },
+
+  /**
+   * Every app the TV lists (getAppsInfo), hidden parts included, for Settings › Privacy's report; null without `tizen`
+   * (TizenBrew's page, a PC) or when the TV won't list them.
+   */
+  appList(): Promise<{ id: string; name: string }[] | null> {
+    const t = tz();
+    const app = t && t.application;
+    if (!app || !app.getAppsInfo) return Promise.resolve(null);
+    return answer<{ id: string; name: string }[] | null>(4000, null, (done) =>
+      app.getAppsInfo!(
+        (apps) => done(apps.filter((a) => a && typeof a.id === 'string').map((a) => ({ id: a.id, name: typeof a.name === 'string' ? a.name : a.id }))),
+        () => done(null),
+      ),
+    );
+  },
+
+  /** The app ids this repo documents, sorted for Settings › Privacy's report (privacy/apps.ts). */
+  knownApps: KNOWN_APPS,
 
   /**
    * How the TV is connected (the nav's Wi-Fi icon and menu): systeminfo's NETWORK, then WIFI_NETWORK for the name and

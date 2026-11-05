@@ -251,6 +251,20 @@ export const bridge = {
   },
 
   /**
+   * The TV's apps for Settings › Privacy's report and re-check: the whole list the TV gives (hidden parts included,
+   * `full`) in the own app, else what installedApps can list. null when neither can.
+   */
+  async appInventory(): Promise<{ apps: TvApp[]; full: boolean } | null> {
+    const toTvApp = (a: { id: string; name: string }): TvApp => ({ id: a.id, name: a.name, key: keyForName(a.name) });
+    if (mode === 'app') {
+      const all = await platform.appList();
+      if (all) return { apps: all.map(toTvApp), full: true };
+    }
+    const some = await bridge.installedApps();
+    return some ? { apps: some, full: false } : null;
+  },
+
+  /**
    * Opens an app. As its own app, AeroTizen's launcher opens it and reports failures through the toast. `name` finds
    * an app that isn't on Home's row in the TV's list (own-app mode); under TizenBrew the service knows apps by key, or
    * by "app:" and the TV's id for any app All apps lists.
