@@ -6,7 +6,7 @@ import { V1 } from '../features';
 import { SERVICES } from '@hometv/core/services.ts';
 import { cardOffer } from '../data/offers';
 import { posterUrl } from '../data/posters';
-import { CURRENCY } from '../data/settings';
+import { currency } from '../data/settings';
 import { h } from '../shell/dom';
 import { focusable, type FocusOpts } from '../shell/focus';
 import { shell, type TabId } from '../shell/app';
@@ -154,7 +154,7 @@ export function posterArt(t: Title, box: HTMLElement): HTMLImageElement {
 export function servicePill(o: Offer | undefined): HTMLElement | null {
   if (!o) return null;
   const paid = o.type === 'rent' || o.type === 'buy';
-  const mark = paid ? h('span.pill-ico.pill-ico--paid', CURRENCY) : h('span.pill-ico.pill-ico--incl', { html: icon('check', 18) });
+  const mark = paid ? h('span.pill-ico.pill-ico--paid', currency()) : h('span.pill-ico.pill-ico--incl', { html: icon('check', 18) });
   return h('div.svc-pill', mark, h('span.pill-name', SERVICES[o.service].name));
 }
 

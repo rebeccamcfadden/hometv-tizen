@@ -31,6 +31,8 @@ export interface LiveTitle extends Title {
   cast: LivePerson[];
   crew: LivePerson[];
   seasons?: LiveSeason[];
+  /** The price sources whose prices the offers show ("Apple", "Watchmode"); set by live/live.ts once prices arrive. */
+  priceSources?: string[];
 }
 
 /** A person found by Search, with what they are known for. */

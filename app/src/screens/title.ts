@@ -454,6 +454,7 @@ export function titlePage(from: Title, opts: { moreLike?: boolean } = {}): Scree
   let t: Title = live.title(from.id) || from;
   store.pushViewed(t.id);
   if (!detailed(t)) live.need(t.id);
+  else live.wantPrices(t);
   const state: PageState = { season: t.next ? t.next.season : 1, want: opts.moreLike ? 'More like this' : 'Overview' };
   const togglePaints: (() => void)[] = [];
   const el = h('div.screen.layer-popup');
@@ -481,7 +482,9 @@ export function titlePage(from: Title, opts: { moreLike?: boolean } = {}): Scree
   const stopLive = live.on(() => {
     if (!shell.has(screen)) return;
     const now = live.title(t.id);
-    if (now && now !== t && detailed(now) && !detailed(t)) {
+    if (now && now !== t && detailed(now)) {
+      // Details arriving, or prices laid over the offers: draw the page again.
+      if (!detailed(t)) live.wantPrices(now);
       t = now;
       keepFocus(draw);
     } else keepFocus(() => void page.tick());

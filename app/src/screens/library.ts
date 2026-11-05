@@ -9,13 +9,15 @@
 // last catalogue at once, offline too. Without a TMDB key the page says so and points to the key page; there is no
 // sample catalogue.
 //
-// Not here yet, and why: the Availability and Length filters wait for prices and per-title details (M2: list entries
-// carry neither); TMDB account lists wait for the sign-in (M3); the card styles of design_preview's dev bar are left out
+// The Availability and Length filters read each title's details (a list entry has neither), loaded a few at a time
+// while one is on (live.prefetch); until a title's details arrive it doesn't pass. TMDB account lists wait for the
+// sign-in (M3); the card styles of design_preview's dev bar are left out
 // (F46's poster card was chosen); Pick for me (screens/pick.ts) isn't in this port.
 
 import './library.css';
 import type { Kind, Title } from '@hometv/core/types.ts';
 import { FIRST_LIST, lists, MY_LIST } from '../data/lists';
+import { isOwnIncluded, offersOf } from '../data/offers';
 import { store } from '../data/store';
 import { live } from '../live/live';
 import { parseId } from '../live/tmdb';
@@ -39,8 +41,8 @@ type ListChoice = string;
 /** F2: an hour away, the page starts again with no filters, the first list and its order. */
 const AWAY_MS = 60 * 60 * 1000;
 
-/** Filters that need prices or details a list entry doesn't carry; they return with M2. */
-const WAIT_FOR_M2 = ['availability', 'runtime'];
+/** Filters that need a title's details (where to watch, runtime), which a list entry doesn't carry. */
+const NEEDS_DETAILS = ['availability', 'runtime'];
 
 const isOffline = () => !bridge.platform.online();
 const isDir = (k: Key): k is 'up' | 'down' | 'left' | 'right' => k === 'up' || k === 'down' || k === 'left' || k === 'right';
@@ -54,7 +56,11 @@ interface Pool {
 export function libraryScreen(kind: Kind): Screen {
   const noun = kind === 'movie' ? 'movies' : 'shows';
   const heading = kind === 'movie' ? 'Movies' : 'TV Shows';
-  const defs = filterDefs(kind, { isSeen: store.isSeen, included: () => false, rentable: () => false }).filter((d) => WAIT_FOR_M2.indexOf(d.id) < 0);
+  const defs = filterDefs(kind, {
+    isSeen: store.isSeen,
+    included: isOwnIncluded,
+    rentable: (t) => offersOf(t).some((o) => o.type === 'rent'),
+  });
   // F2: the page starts with no filters each time HomeTV starts.
   const filters = defaultFilters();
   let list: ListChoice = FIRST_LIST;
@@ -192,12 +198,18 @@ export function libraryScreen(kind: Kind): Screen {
     );
 
     const recent = sort === 'recent' ? recentRanks([store.myListIds()]) : undefined;
-    const shown = sortTitles(applyFilters(defs, filters, all), sort, recent);
+    // Availability and Length read details, which a list entry hasn't: while one is on, the list's titles load a few at
+    // a time and are judged as they arrive (the ones still loading don't pass).
+    const needing = defs.some((d) => NEEDS_DETAILS.indexOf(d.id) >= 0 && (filters[d.id] || 0) !== 0);
+    const judged = needing ? all.map((t) => live.title(t.id) || t) : all;
+    if (needing) live.prefetch(all.map((t) => t.id));
+    const waiting = needing ? live.prefetching(all.map((t) => t.id)) : 0;
+    const shown = sortTitles(applyFilters(defs, filters, judged), sort, recent);
     replace(listTitle, listName(list));
     const count = shown.length === all.length ? `${shown.length} ${noun}` : `${shown.length} of ${all.length} ${noun}`;
     const offline = isOffline();
     const old = view.stale || (offline && all.length > 0);
-    replace(listStatus, phase !== 'ready' ? '' : old ? `${count} · as last loaded` : shown.length === all.length ? `${count} · From TMDB` : `${count} · Filtered`);
+    replace(listStatus, phase !== 'ready' ? '' : waiting ? `Checking ${waiting} titles… · ${count}` : old ? `${count} · as last loaded` : shown.length === all.length ? `${count} · From TMDB` : `${count} · Filtered`);
     replace(
       scopeEl,
       offline

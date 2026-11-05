@@ -12,7 +12,7 @@ const t = c.getTitle;
 test.afterEach(() => s.settings.reset());
 
 test('one region: Sweden’s services and stores, in kronor', () => {
-  assert.equal(s.CURRENCY, 'kr');
+  assert.equal(s.currency(), 'kr');
   const ids = s.pickServices().map((x) => x.id);
   assert.ok(ids.includes('svtplay') && !ids.includes('hulu'), 'Sweden’s list, not the US one');
   assert.deepEqual(

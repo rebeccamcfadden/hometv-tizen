@@ -54,6 +54,7 @@ port to another TV (LG's webOS: hometv-webos) copies the screens and the shell u
 | `keyPages.onTv()` | a real TV (only the TV's port is tried) | `tizen` is there |
 | `keyPages.start()` | starts the key page's background service | an app control to `HmTvSpike0.HomeTVPages` |
 | `keyPages.token()` | the screen's token for the service's TV-only routes | read from the app's private folder (`tizen.filesystem`) |
+| `keyPages.priceKeys()` | the Watchmode and Movie of the Night keys saved on the key page (v1 prices) | read from the app's private folder (`hometv-keys-v1.json`), same file as the TMDB key |
 | `keyPages.address()` | the TV's own address, when the service can't say | `tizen.systeminfo` (Wi-Fi, then Ethernet) |
 
 Keep this small: a screen that needs something new from the TV adds one member here, with its Samsung line in this

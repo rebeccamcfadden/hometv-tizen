@@ -613,6 +613,24 @@ export const platform = {
         return /^[A-Za-z0-9._-]+$/.test(text.trim()) ? text.trim() : '';
       }
     },
+    /**
+     * The Watchmode and Movie of the Night keys the household sent through the key page, from the same private folder (on
+     * a PC the dev server). "" for a key not saved or not readable. Read-only: the price sources (app/src/live/prices/)
+     * send each to its own service and nowhere else.
+     */
+    async priceKeys(): Promise<{ watchmode: string; motn: string }> {
+      const none = { watchmode: '', motn: '' };
+      const text = await readPrivate(KEYS_FILE, '/__hometv/price-keys', false);
+      if (!text) return none;
+      try {
+        const parsed = JSON.parse(text);
+        const keys = parsed && parsed.keys ? parsed.keys : parsed;
+        const of = (id: string): string => (keys && keys[id] && typeof keys[id].key === 'string' ? keys[id].key.trim() : typeof keys[id] === 'string' ? keys[id].trim() : '');
+        return { watchmode: of('watchmode'), motn: of('motn') };
+      } catch (e) {
+        return none;
+      }
+    },
     /** The TV's own address on the home network, when the service can't list its own. "" when unknown. */
     address(): Promise<string> {
       const t = tz();

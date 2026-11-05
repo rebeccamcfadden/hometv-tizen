@@ -58,7 +58,8 @@ export function filterDefs(kind: Kind, facts: TitleFacts): FilterDef[] {
       options: ['Any length', 'Under 90 minutes', 'Under 2 hours', 'Under 2½ hours'],
       short: ['', 'Under 90 min', 'Under 2h', 'Under 2½h'],
       kinds: ['movie'],
-      test: (t, i) => i === 0 || (t.runtime || 0) < [0, 90, 120, 150][i],
+      // A title whose runtime isn't known yet (its details haven't arrived) doesn't pass.
+      test: (t, i) => i === 0 || (!!t.runtime && t.runtime < [0, 90, 120, 150][i]),
     },
     {
       id: 'watch',
